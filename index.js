@@ -278,6 +278,61 @@ async function run() {
 
 /**
  * @swagger
+ * /registerHost:
+ *   post:
+ *     summary: Register a new host
+ *     description: Register a new host with username, password, name, email, and phoneNumber
+ *     tags:
+ *       - Security
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               username:
+ *                 type: string
+ *                 description: The username of the host
+ *               password:
+ *                 type: string
+ *                 description: The password of the host
+ *               name:
+ *                 type: string
+ *                 description: The name of the host
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: The email of the host
+ *               phoneNumber:
+ *                 type: string
+ *                 description: The phone number of the host
+ *             required:
+ *               - username
+ *               - password
+ *               - name
+ *               - email
+ *               - phoneNumber
+ *     responses:
+ *       '200':
+ *         description: Host registered successfully
+ *       '401':
+ *         description: Unauthorized - Token is missing or invalid
+ *       '400':
+ *         description: Username already in use, please enter another username
+ */
+
+app.post('/registerSecurity', verifyToken, async (req, res) => {
+    let data = req.user;
+    let mydata = req.body;
+    res.send(await register(client, data, mydata));
+  });
+
+
+/**
+ * @swagger
  * /loginHost:
  *   post:
  *     summary: Login as a host
