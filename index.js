@@ -516,7 +516,7 @@ app.get('/retrievePass/:passIdentifier', verifyToken, async (req, res) => {
  *         description: Pass record not found.
  */
 
-app.get('/retrieveHostContact/:passIdentifier', verifySecurityToken, async (req, res) => {
+app.get('/retrieveHostContact/:passIdentifier', verifyToken, async (req, res) => {
     try {
         // Extract the passIdentifier from request parameters
         const passIdentifier = req.params.passIdentifier;
@@ -533,6 +533,66 @@ app.get('/retrieveHostContact/:passIdentifier', verifySecurityToken, async (req,
         res.status(200).json({ hostContactNumber });
     } catch (error) {
         // Handle errors
+        console.error(error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+
+
+/**
+ * @swagger
+ * /deleteUser/{role}/{username}:
+ *   delete:
+ *     summary: Delete a user (Security or Host) by admin based on role
+ *     description: Allows an admin to delete either a security user or a host by specifying the role and username.
+ *     tags:
+ *       - Admin Operations
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: role
+ *         required: true
+ *         description: The role of the user to be deleted (Security or Host).
+ *         schema:
+ *           type: string
+ *       - in: path
+ *         name: username
+ *         required: true
+ *         description: The username of the user to be deleted.
+ *         schema:
+ *           type: string
+ *     responses:
+ *       '200':
+ *         description: User deleted successfully.
+ *       '401':
+ *         description: Unauthorized access.
+ *       '404':
+ *         description: User not found.
+ */
+
+app.delete('/deleteUser/:role/:username', verifyToken, async (req, res) => {
+    try {
+        const role = req.params.role.toLowerCase(); // Convert role to lowercase for comparison
+        const username = req.params.username;
+
+        let deleteResult;
+
+        if (role === 'security') {
+            deleteResult = await deleteSecurityUser(username);
+        } else if (role === 'host') {
+            deleteResult = await deleteHostUser(username);
+        } else {
+            return res.status(400).json({ error: 'Invalid role specified.' });
+        }
+
+        if (deleteResult.deletedCount === 1) {
+            return res.status(200).json({ message: 'User deleted successfully.' });
+        } else {
+            return res.status(404).json({ error: 'User not found.' });
+        }
+    } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Internal Server Error' });
     }
@@ -778,6 +838,11 @@ async function readRecords(client, data) {
 
 // Function to handle retrieval of host contact number based on passIdentifier
 async function handleRetrieveHostContact(client, passIdentifier) {
+    // Check if the user has the authority to read records (must be a host)
+    if (data.role !== 'Security') {
+        return 'You do not have the authority to retrieve Host contact';
+      }
+
     // Call the retrievePass function to fetch the pass details by security
     const passDetails = await retrievePass(client, {}, passIdentifier); // Pass an empty object since security is querying
     
@@ -790,6 +855,23 @@ async function handleRetrieveHostContact(client, passIdentifier) {
     return passDetails.HostphoneNumber;
 }
 
+async function deleteSecurityUser(username) {
+    if (data.role !== 'Admin') {
+        return 'You do not have the authority to delete Security';
+      }
+    const securityCollection = client.db('assigment').collection('Security');
+    const result = await securityCollection.deleteOne({ username: username });
+    return result;
+}
+
+async function deleteHostUser(username) {
+    if (data.role !== 'Admin') {
+        return 'You do not have the authority to delete Host';
+      }
+    const hostCollection = client.db('assigment').collection('Host');
+    const result = await hostCollection.deleteOne({ username: username });
+    return result;
+}
 
 
 
