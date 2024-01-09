@@ -363,8 +363,6 @@ app.post('/loginHost', async (req, res) => {
  *           application/json:
  *             schema:
  *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Record'
  *       '401':
  *         description: Unauthorized. Invalid or missing token.
  */
@@ -404,7 +402,7 @@ app.post('/loginHost', async (req, res) => {
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/PassRecord'
+ *               type:object
  *       '403':
  *         description: Unauthorized. Only hosts can issue passes.
  */
@@ -483,6 +481,62 @@ app.get('/retrievePass/:passIdentifier', verifyToken, async (req, res) => {
 });
 
 
+
+/**
+ * @swagger
+ * /retrieveHostContact/{passIdentifier}:
+ *   get:
+ *     summary: Retrieve host contact number by security
+ *     description: Retrieve the contact number of the host based on the visitor's pass identifier. This is a public API available only to authenticated security personnel.
+ *     tags:
+ *       - Security Operations
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: passIdentifier
+ *         required: true
+ *         description: The unique identifier of the visitor's pass.
+ *         schema:
+ *           type: string
+ *     responses:
+ *       '200':
+ *         description: Successfully retrieved host contact number.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 hostContactNumber:
+ *                   type: string
+ *                   description: Contact number of the destination host.
+ *       '401':
+ *         description: Unauthorized access.
+ *       '404':
+ *         description: Pass record not found.
+ */
+
+app.get('/retrieveHostContact/:passIdentifier', verifySecurityToken, async (req, res) => {
+    try {
+        // Extract the passIdentifier from request parameters
+        const passIdentifier = req.params.passIdentifier;
+        
+        // Call the handleRetrieveHostContact function to get the host contact number
+        const hostContactNumber = await handleRetrieveHostContact(client, passIdentifier);
+        
+        // If host contact number is null, send a 404 response
+        if (!hostContactNumber) {
+            return res.status(404).json({ error: 'Pass record not found.' });
+        }
+        
+        // Return the host contact number
+        res.status(200).json({ hostContactNumber });
+    } catch (error) {
+        // Handle errors
+        console.error(error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
 
   
 }
@@ -722,6 +776,19 @@ async function readRecords(client, data) {
     return records;
 }
 
+// Function to handle retrieval of host contact number based on passIdentifier
+async function handleRetrieveHostContact(client, passIdentifier) {
+    // Call the retrievePass function to fetch the pass details by security
+    const passDetails = await retrievePass(client, {}, passIdentifier); // Pass an empty object since security is querying
+    
+    // If pass record not found, return null
+    if (passDetails === 'Pass record not found.') {
+        return null;
+    }
+    
+    // Return the host contact number from passDetails
+    return passDetails.HostphoneNumber;
+}
 
 
 
