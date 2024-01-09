@@ -368,37 +368,41 @@ app.post('/loginHost', async (req, res) => {
   });
   
   /**
-   * @swagger
-   * /readHost:
-   *   get:
-   *     summary: Read all host data
-   *     description: Retrieve all host data using a valid token obtained from loginHost
-   *     tags:
-   *       - Host
-   *     security:
-   *       - bearerAuth: []
-   *     responses:
-   *       '200':
-   *         description: Host data retrieval successful
-   *       '401':
-   *         description: Unauthorized - Token is missing or invalid
-   *       '403':
-   *         description: Forbidden - Token is not associated with host access
-   */
-  app.get('/readHost', verifyToken, async (req, res) => {
+ * @swagger
+ * /readRecords:
+ *   get:
+ *     summary: Read records by Host
+ *     description: Retrieve records with authorization based on the provided host token.
+ *     tags:
+ *       - Host
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       '200':
+ *         description: Successfully retrieved records with host authorization.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Record'
+ *       '401':
+ *         description: Unauthorized. Invalid or missing token.
+ */
+  app.get('/readRecords', verifyToken, async (req, res) => {
     let data = req.user;
-    res.send(await read(client, data));
+    res.send(await readHost(client, data));
   });
+
+
 /**
  * @swagger
  * /issuePass:
  *   post:
  *     summary: Issue a visitor pass
- *     description: Issue a new visitor pass with a valid token obtained from the loginSecurity endpoint
+ *     description: Issue a visitor pass by a host with visitor's name, purpose of visit, host username, and host phone number.
  *     tags:
- *       - Host
- *     security:
- *       - bearerAuth: []
+ *       - Pass Management
  *     requestBody:
  *       required: true
  *       content:
@@ -406,21 +410,22 @@ app.post('/loginHost', async (req, res) => {
  *           schema:
  *             type: object
  *             properties:
- *               visitorUsername:
+ *               visitorName:
  *                 type: string
- *                 description: The username of the visitor for whom the pass is issued
- *               passDetails:
+ *               purpose:
  *                 type: string
- *                 description: Additional details for the pass (optional)
  *             required:
- *               - visitorUsername
+ *               - visitorName
+ *               - purpose
  *     responses:
  *       '200':
- *         description: Visitor pass issued successfully, returns a unique pass identifier
- *       '401':
- *         description: Unauthorized - Token is missing or invalid
- *       '404':
- *         description: Visitor not found
+ *         description: Successfully issued a visitor pass.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PassRecord'
+ *       '403':
+ *         description: Unauthorized. Only hosts can issue passes.
  */
     app.post('/issuePass', verifyToken, async (req, res) => {
         let data = req.user;
@@ -432,26 +437,28 @@ app.post('/loginHost', async (req, res) => {
  * @swagger
  * /retrievePass/{passIdentifier}:
  *   get:
- *     summary: Retrieve visitor pass details
- *     description: Retrieve pass details for a visitor using the pass identifier
+ *     summary: Retrieve a visitor pass details
+ *     description: Retrieve details of a visitor pass by a host using the unique pass identifier.
  *     tags:
- *       - Visitor
- *     security:
- *       - bearerAuth: []
+ *       - Pass Management
  *     parameters:
  *       - in: path
  *         name: passIdentifier
  *         required: true
- *         description: The unique pass identifier
  *         schema:
  *           type: string
+ *         description: Unique identifier of the visitor pass
  *     responses:
  *       '200':
- *         description: Visitor pass details retrieved successfully
- *       '401':
- *         description: Unauthorized - Token is missing or invalid
+ *         description: Successfully retrieved the visitor pass details.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PassRecord'
+ *       '403':
+ *         description: Unauthorized. Only hosts can retrieve pass details.
  *       '404':
- *         description: Pass not found or unauthorized to retrieve
+ *         description: Pass record not found.
  */
     app.get('/retrievePass/:passIdentifier', verifyToken, async (req, res) => {
         let data = req.user;
@@ -690,8 +697,18 @@ function generatePassIdentifier() {
 }
   
 
-
-
+async function readRecords(client, data) {
+    // Check if the user has the authority to read records (must be a host)
+    if (data.role !== 'Host') {
+      return 'You do not have the authority to read records.';
+    }
+  
+    // Fetch all records from the database
+    const records = await client.db('assigment').collection('Records').find({}).toArray();
+  
+    // Return the records
+    return records;
+}
 
 
 
