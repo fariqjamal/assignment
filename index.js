@@ -15,7 +15,7 @@ const options = {
     definition: {
         openapi: '3.0.0',
         info: {
-            title: 'Welcome to Mobile Legend',
+            title: 'Welcome to web app Secure Info',
             version: '1.0.0'
         },
         components: {  // Add 'components' section
@@ -55,7 +55,7 @@ async function run() {
   });
 
   app.get('/', (req, res) => {
-    res.send('Server Group 21 Information Security');
+    res.send('Server Group 20 Information Security');
   });
 
   /**
@@ -253,65 +253,6 @@ async function run() {
     res.send(await read(client, data));
   });
 
-/**
- * @swagger
- * /registerHost:
- *   post:
- *     summary: Register a new host
- *     description: Register a new host with username, password, name, email, and phoneNumber
- *     tags:
- *       - Security
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               username:
- *                 type: string
- *                 description: The username of the host
- *               password:
- *                 type: string
- *                 description: The password of the host
- *               name:
- *                 type: string
- *                 description: The name of the host
- *               email:
- *                 type: string
- *                 format: email
- *                 description: The email of the host
- *               phoneNumber:
- *                 type: string
- *                 description: The phone number of the host
- *             required:
- *               - username
- *               - password
- *               - name
- *               - email
- *               - phoneNumber
- *     responses:
- *       '200':
- *         description: Host registered successfully
- *       '401':
- *         description: Unauthorized - Token is missing or invalid
- *       '400':
- *         description: Username already in use, please enter another username
- */
-
-app.post('/registerHost', verifyToken, async (req, res) => {
-  // Check if the user has the role of 'Security'
-  if (req.user.role !== 'Security') {
-    return res.status(401).send('Unauthorized - Only Security Host can register hosts.');
-  }
-
-  let hostData = req.body;
-  res.send(await registerHost(client, hostData));
-});
-
-
   /**
  * @swagger
  * /readSecurity:
@@ -334,59 +275,6 @@ app.post('/registerHost', verifyToken, async (req, res) => {
     let data = req.user;
     res.send(await read(client, data));
   });
-
-/**
- * @swagger
- * /issuePass:
- *   post:
- *     summary: Issue a Host pass
- *     description: Issue a new Host pass with a valid token obtained from the loginHost endpoint
- *     tags:
- *       - Host
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               HostUsername:
- *                 type: string
- *                 description: The username of the Host for whom the pass is issued
- *               passDetails:
- *                 type: string
- *                 description: Additional details for the pass (optional)
- *             required:
- *               - HostUsername
- *     responses:
- *       '200':
- *         description: Host pass issued successfully, returns a unique pass identifier
- *       '401':
- *         description: Unauthorized - Token is missing or invalid
- *       '404':
- *         description: Host not found
- */
-app.post('/issuePass', verifyToken, async (req, res) => {
-    let securityUserToken = req.headers.authorization;
-
-    if (!securityUserToken) {
-        return res.status(401).send('Unauthorized - Security user token is missing');
-    }
-
-    // Verify the security user token
-    jwt.verify(securityUserToken.split(' ')[1], 'julpassword', async function (err, decodedSecurityUser) {
-        if (err) {
-            console.error(err);
-            return res.status(401).send('Invalid security user token');
-        }
-
-        let data = decodedSecurityUser;
-        let passData = req.body;
-        res.send(await issuePass(client, data, passData));
-    });
-});
 
 /**
  * @swagger
@@ -420,42 +308,82 @@ app.post('/issuePass', verifyToken, async (req, res) => {
  */
 
 app.post('/loginHost', async (req, res) => {
-  let hostData = req.body;
-  res.send(await loginHost(client, hostData));
-});
+    let hostData = req.body;
+    res.send(await login(client, hostData));
+  });
+  
+  /**
+   * @swagger
+   * /readHost:
+   *   get:
+   *     summary: Read all host data
+   *     description: Retrieve all host data using a valid token obtained from loginHost
+   *     tags:
+   *       - Host
+   *     security:
+   *       - bearerAuth: []
+   *     responses:
+   *       '200':
+   *         description: Host data retrieval successful
+   *       '401':
+   *         description: Unauthorized - Token is missing or invalid
+   *       '403':
+   *         description: Forbidden - Token is not associated with host access
+   */
+  app.get('/readHost', verifyToken, async (req, res) => {
+    let data = req.user;
+    res.send(await read(client, data));
+  });
 
 /**
  * @swagger
- * /readHost:
- *   get:
- *     summary: Read all host data
- *     description: Retrieve all host data using a valid token obtained from loginHost
+ * /issuePass:
+ *   post:
+ *     summary: Issue a visitor pass
+ *     description: Issue a new visitor pass with a valid token obtained from the loginSecurity endpoint
  *     tags:
  *       - Host
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               visitorUsername:
+ *                 type: string
+ *                 description: The username of the visitor for whom the pass is issued
+ *               passDetails:
+ *                 type: string
+ *                 description: Additional details for the pass (optional)
+ *             required:
+ *               - visitorUsername
  *     responses:
  *       '200':
- *         description: Host data retrieval successful
+ *         description: Visitor pass issued successfully, returns a unique pass identifier
  *       '401':
  *         description: Unauthorized - Token is missing or invalid
- *       '403':
- *         description: Forbidden - Token is not associated with host access
+ *       '404':
+ *         description: Visitor not found
  */
-app.get('/readHost', verifyToken, async (req, res) => {
-  let data = req.user;
-  res.send(await readHost(client, data));
-});
-
+    app.post('/issuePass', verifyToken, async (req, res) => {
+        let data = req.user;
+        let passData = req.body;
+        res.send(await issuePass(client, data, passData));
+    });
 
 /**
  * @swagger
- * /retrievePassHost/{passIdentifier}:
+ * /retrievePass/{passIdentifier}:
  *   get:
- *     summary: Retrieve Host pass details as a host
- *     description: Retrieve pass details for a Host using the pass identifier with a valid token obtained from loginHost
+ *     summary: Retrieve visitor pass details
+ *     description: Retrieve pass details for a visitor using the pass identifier
  *     tags:
- *       - Host
+ *       - Visitor
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: passIdentifier
@@ -465,17 +393,17 @@ app.get('/readHost', verifyToken, async (req, res) => {
  *           type: string
  *     responses:
  *       '200':
- *         description: Host pass details retrieved successfully
+ *         description: Visitor pass details retrieved successfully
  *       '401':
  *         description: Unauthorized - Token is missing or invalid
  *       '404':
  *         description: Pass not found or unauthorized to retrieve
  */
-app.get('/retrievePassHost/:passIdentifier', verifyToken, async (req, res) => {
-  let data = req.user;
-  let passIdentifier = req.params.passIdentifier;
-  res.send(await retrievePassHost(client, data, passIdentifier));
-});
+    app.get('/retrievePass/:passIdentifier', verifyToken, async (req, res) => {
+        let data = req.user;
+        let passIdentifier = req.params.passIdentifier;
+        res.send(await retrievePass(client, data, passIdentifier));
+    });
 
 
   
@@ -487,7 +415,7 @@ run().catch(console.error);
 function generateToken(userProfile){
   return jwt.sign(
   userProfile,    //this is an obj
-  'riqpassword',           //password
+  'julpassword',           //password
   { expiresIn: '2h' });  //expires after 2 hour
 }
 
@@ -509,7 +437,7 @@ async function registerAdmin(client, data) {
 async function login(client, data) {
   const adminCollection = client.db("assigment").collection("Admin");
   const securityCollection = client.db("assigment").collection("Security");
-  const HostCollection = client.db("assigment").collection("Host");
+  const hostCollection = client.db("assigment").collection("Host");
 
   // Find the admin user
   let match = await adminCollection.findOne({ username: data.username });
@@ -521,7 +449,7 @@ async function login(client, data) {
 
   if (!match) {
     // Find the regular user
-    match = await HostCollection.findOne({ username: data.username });
+    match = await hostCollection.findOne({ username: data.username });
   }
 
   if (match) {
@@ -550,20 +478,6 @@ async function encryptPassword(password) {
   return hash 
 }
 
-// Function to retrieve pass details as a host
-async function retrievePassHost(client, data, passIdentifier) {
-  if (data.role == 'Security') {
-    // Implement the logic to retrieve pass details as a host
-    // This might involve checking if the host has the authority to retrieve the pass details
-    // You can customize this based on your specific requirements
-    // For simplicity, let's assume that hosts have access to all pass details
-    const passDetails = await retrievePass(client, data, passIdentifier);
-    return passDetails;
-  } else {
-    return 'Unauthorized - Only Security Host can retrieve pass details as a host.';
-  }
-};
-
 
 //Function to decrypt password
 async function decryptPassword(password, compare) {
@@ -572,17 +486,17 @@ async function decryptPassword(password, compare) {
 }
 
 
-//Function to register security and Host
+//Function to register security and visitor
 async function register(client, data, mydata) {
   const adminCollection = client.db("assigment").collection("Admin");
   const securityCollection = client.db("assigment").collection("Security");
-  const HostCollection = client.db("assigment").collection("Host");
+  const hostCollection = client.db("assigment").collection("Host");
 
   const tempAdmin = await adminCollection.findOne({ username: mydata.username });
   const tempSecurity = await securityCollection.findOne({ username: mydata.username });
-  const tempHost = await HostCollection.findOne({ username: mydata.username });
+  const tempUser = await hostCollection.findOne({ username: mydata.username });
 
-  if (tempAdmin || tempSecurity || tempHost) {
+  if (tempAdmin || tempSecurity || tempUser) {
     return "Username already in use, please enter another username";
   }
 
@@ -601,11 +515,11 @@ async function register(client, data, mydata) {
   }
 
   if (data.role === "Security") {
-    const result = await HostCollection.insertOne({
+    const result = await hostCollection.insertOne({
       username: mydata.username,
       password: await encryptPassword(mydata.password),
       name: mydata.name,
-      email: mydata.email,   
+      email: mydata.email,
       Security: data.username,
       phoneNumber: mydata.phoneNumber,
       role: "Host",
@@ -620,104 +534,56 @@ async function register(client, data, mydata) {
   }
 }
 
-// Function to read host data
-async function readHost(client, data) {
-  if (data.role == 'Security') {
-    const Host = await client.db('assigment').collection('Host').find().toArray();
-    return { Host };
-  } else {
-    return 'Unauthorized - Only Security Host can retrieve host data.';
-  }
-};
-
-// Function to register a host
-async function registerHost(client, hostData) {
-  const hostsCollection = client.db('assigment').collection('Host');
-
-  // Check if the username is already in use
-  const existingHost = await hostsCollection.findOne({ username: hostData.username });
-  if (existingHost) {
-    return 'Username already in use, please enter another username';
-  }
-
-  // Insert the host data into the Host collection
-  const result = await hostsCollection.insertOne(hostData);
-
-  return 'Host registered successfully';
-}
-
-// Function to issue a pass with the security user information
+// Function to issue a pass
 async function issuePass(client, data, passData) {
-    const HostCollection = client.db('assigment').collection('Host');
-    const securityCollection = client.db('assigment').collection('Security');
-
+    const hostCollection = client.db('assigment').collection('Host');
+  
     // Check if the security user has the authority to issue passes
     if (data.role !== 'Host') {
-        return 'You do not have the authority to issue passes.';
+      return 'You do not have the authority to issue passes.';
     }
-
-    // Find the Host for whom the pass is issued
-    const Host = await HostCollection.findOne({ username: passData.HostUsername, role: 'Host' });
-
-    if (!Host) {
-        return 'Host not found';
+  
+    // Find the visitor for whom the pass is issued
+    const host = await hostCollection.findOne({ username: passData.visitorUsername, role: 'Host' });
+  
+    if (!host) {
+      return 'host not found';
     }
-
+  
     // Generate a unique pass identifier (you can use a library or a combination of data)
     const passIdentifier = generatePassIdentifier();
-
+  
     // Store the pass details in the database or any other desired storage
     // You can create a new Passes collection for this purpose
-    // For simplicity, let's assume a Passes collection with a structure like { passIdentifier, HostUsername, passDetails }
+    // For simplicity, let's assume a Passes collection with a structure like { passIdentifier, visitorUsername, passDetails }
     const passRecord = {
-        passIdentifier: passIdentifier,
-        VisitorUsername: passData.VisitorUsername,
-        passDetails: passData.passDetails || '',
-        issuedBy: data.username, // Security user who issued the pass
-        issueTime: new Date()
+      passIdentifier: passIdentifier,
+      visitorUsername: passData.visitorUsername,
+      passDetails: passData.passDetails || '',
+      issuedBy: data.username, // Security user who issued the pass
+      HostphoneNumber:data.phoneNumber,
+      issueTime: new Date()
     };
-
+  
     // Insert the pass record into the Passes collection
-    await client.db('assigment').collection('Passes').insertOne(passRecord);
-
-    // Update the Host's information (you might want to store pass details in the Host document)
-    await HostCollection.updateOne(
-        { username: passData.HostUsername },
-        { $set: { passIdentifier: passIdentifier } }
+    await client.db('assigment').collection('Records').insertOne(passRecord);
+  
+    // Update the visitor's information (you might want to store pass details in the visitor document)
+    await hostCollection.updateOne(
+      { username: passData.visitorUsername },
+      { $set: { passIdentifier: passIdentifier } }
     );
-
-    return `Host pass issued successfully with pass identifier: ${passIdentifier}`;
+  
+    return `Visitor pass issued successfully with pass identifier: ${passIdentifier}`;
 }
-
-// Function to login as a host
-async function loginHost(client, hostData) {
-  const hostsCollection = client.db('assigment').collection('Host');
-
-  // Find the host user
-  const host = await hostsCollection.findOne({ username: hostData.username });
-
-  if (host) {
-    // Compare the provided password with the stored password
-    const isPasswordMatch = await decryptPassword(hostData.password, host.password);
-
-    if (isPasswordMatch) {
-      const token = generateToken(host);
-      return "\nToken for " + host.name + ": " + token;
-    } else {
-      return "Wrong password";
-    }
-  } else {
-    return "Host not found";
-  }
-};
 
 // Function to retrieve pass details
 async function retrievePass(client, data, passIdentifier) {
-    const passesCollection = client.db('assigment').collection('Passes');
-    const securityCollection = client.db('assigment').collection('Security');
+    const passesCollection = client.db('assigment').collection('Records');
+    const hostCollection = client.db('assigment').collection('Host');
   
     // Check if the security user has the authority to retrieve pass details
-    if (data.role !== 'Security') {
+    if (data.role !== 'Host') {
       return 'You do not have the authority to retrieve pass details.';
     }
   
@@ -731,9 +597,10 @@ async function retrievePass(client, data, passIdentifier) {
     // You can customize the response format based on your needs
     return {
       passIdentifier: passRecord.passIdentifier,
-      HostUsername: passRecord.HostUsername,
+      visitorUsername: passRecord.visitorUsername,
       passDetails: passRecord.passDetails,
       issuedBy: passRecord.issuedBy,
+      HostphoneNumber:passRecord.HostphoneNumber,
       issueTime: passRecord.issueTime
     };
 }
@@ -743,10 +610,10 @@ async function read(client, data) {
   if (data.role == 'Admin') {
     const Admins = await client.db('assigment').collection('Admin').find({ role: 'Admin' }).next();
     const Security = await client.db('assigment').collection('Security').find({ role: 'Security' }).toArray();
-    const Host = await client.db('assigment').collection('Host').find({ role: 'Host' }).toArray();
-    const Passes = await client.db('assigment').collection('Passes').find().toArray();
+    const Hosts = await client.db('assigment').collection('Host').find({ role: 'Host' }).toArray();
+    const Records = await client.db('assigment').collection('Records').find().toArray();
 
-    return { Admins, Security, Host, Record };
+    return { Admins, Security, Hosts, Records };
   }
 
   if (data.role == 'Security') {
@@ -755,21 +622,21 @@ async function read(client, data) {
       return 'User not found';
     }
 
-    const Host = await client.db('assigment').collection('Host').find({ Security: data.username }).toArray();
-    const Passes = await client.db('assigment').collection('Passes').find().toArray();
+    const Hosts = await client.db('assigment').collection('Host').find({ Security: data.username }).toArray();
+    const Records = await client.db('assigment').collection('Records').find().toArray();
 
-    return { Security, Host, Passes };
+    return { Security, Hosts, Records };
   }
 
   if (data.role == 'Host') {
-    const Host = await client.db('assigment').collection('Host').findOne({ username: data.username });
-    if (!Host) {
+    const Hosts = await client.db('assigment').collection('Host').findOne({ username: data.username });
+    if (!Visitor) {
       return 'User not found';
     }
 
-    const Passes = await client.db('assigment').collection('Passes').find({ recordID: { $in: Host.records } }).toArray();
+    const Records = await client.db('assigment').collection('Records').find({ recordID: { $in: Visitor.records } }).toArray();
 
-    return { Host, Passes };
+    return { Hosts, Records };
   }
 }
 
@@ -788,53 +655,10 @@ function generatePassIdentifier() {
   
 
 
-//Function to update data
-async function update(client, data, mydata) {
-  const HostCollection = client.db("assigment").collection("Host");
-
-  if (mydata.password) {
-    mydata.password = await encryptPassword(mydata.password);
-  }
-
-  const result = await HostCollection.updateOne(
-    { username: data.username },
-    { $set: mydata }
-  );
-
-  if (result.matchedCount === 0) {
-    return "User not found";
-  }
-
-  return "Update Successfully";
-}
 
 
-//Function to delete data
-async function deleteUser(client, data) {
-  const HostCollection = client.db("assigment").collection("Host");
-  const recordsCollection = client.db("assigment").collection("Records");
-  const securityCollection = client.db("assigment").collection("Security");
 
-  // Delete user document
-  const deleteResult = await HostCollection.deleteOne({ username: data.username });
-  if (deleteResult.deletedCount === 0) {
-    return "User not found";
-  }
 
-  // Update Hosts array in other Host' documents
-  await HostCollection.updateMany(
-    { Hosts: data.username },
-    { $pull: { Hosts: data.username } }
-  );
-
-  // Update Hosts array in the Security collection
-  await securityCollection.updateMany(
-    { Hosts: data.username },
-    { $pull: { Hosts: data.username } }
-  );
-
-  return "Delete Successful\nBut the records are still in the database";
-}
 
 
 
@@ -843,9 +667,9 @@ function output(data) {
   if(data == 'Admin') {
     return "You are logged in as Admin\n1)register Security\n2)read all data"
   } else if (data == 'Security') {
-    return "You are logged in as Security\n1)register Host\n2)read security and Host data"
-  } else if (data == 'Host') {
-    return "You are logged in as Host\n1)check in\n2)check out\n3)read Host data\n4)update profile\n5)delete account"
+    return "You are logged in as Security\n1)register Visitor\n2)read security and visitor data"
+  } else if (data == 'Visitor') {
+    return "You are logged in as Visitor\n1)check in\n2)check out\n3)read visitor data\n4)update profile\n5)delete account"
   }
 }
 
@@ -859,7 +683,7 @@ function verifyToken(req, res, next) {
 
   let token = header.split(' ')[1];
 
-  jwt.verify(token, 'riqpassword', function(err, decoded) {
+  jwt.verify(token, 'julpassword', function(err, decoded) {
     if (err) {
       console.error(err);
       return res.status(401).send('Invalid token');
@@ -869,5 +693,3 @@ function verifyToken(req, res, next) {
     next();
   });
 }
-
-
