@@ -304,7 +304,7 @@ async function run() {
 app.post('/registerHost', verifyToken, async (req, res) => {
   // Check if the user has the role of 'Security'
   if (req.user.role !== 'Security') {
-    return res.status(401).send('Unauthorized - Only Security users can register hosts.');
+    return res.status(401).send('Unauthorized - Only Security Host can register hosts.');
   }
 
   let hostData = req.body;
@@ -339,8 +339,8 @@ app.post('/registerHost', verifyToken, async (req, res) => {
  * @swagger
  * /issuePass:
  *   post:
- *     summary: Issue a visitor pass
- *     description: Issue a new visitor pass with a valid token obtained from the loginHost endpoint
+ *     summary: Issue a Host pass
+ *     description: Issue a new Host pass with a valid token obtained from the loginHost endpoint
  *     tags:
  *       - Host
  *     security:
@@ -352,21 +352,21 @@ app.post('/registerHost', verifyToken, async (req, res) => {
  *           schema:
  *             type: object
  *             properties:
- *               visitorUsername:
+ *               HostUsername:
  *                 type: string
- *                 description: The username of the visitor for whom the pass is issued
+ *                 description: The username of the Host for whom the pass is issued
  *               passDetails:
  *                 type: string
  *                 description: Additional details for the pass (optional)
  *             required:
- *               - visitorUsername
+ *               - HostUsername
  *     responses:
  *       '200':
- *         description: Visitor pass issued successfully, returns a unique pass identifier
+ *         description: Host pass issued successfully, returns a unique pass identifier
  *       '401':
  *         description: Unauthorized - Token is missing or invalid
  *       '404':
- *         description: Visitor not found
+ *         description: Host not found
  */
 app.post('/issuePass', verifyToken, async (req, res) => {
     let securityUserToken = req.headers.authorization;
@@ -452,10 +452,10 @@ app.get('/readHost', verifyToken, async (req, res) => {
  * @swagger
  * /retrievePassHost/{passIdentifier}:
  *   get:
- *     summary: Retrieve visitor pass details as a host
- *     description: Retrieve pass details for a visitor using the pass identifier with a valid token obtained from loginHost
+ *     summary: Retrieve Host pass details as a host
+ *     description: Retrieve pass details for a Host using the pass identifier with a valid token obtained from loginHost
  *     tags:
- *       - Visitor
+ *       - Host
  *     parameters:
  *       - in: path
  *         name: passIdentifier
@@ -465,7 +465,7 @@ app.get('/readHost', verifyToken, async (req, res) => {
  *           type: string
  *     responses:
  *       '200':
- *         description: Visitor pass details retrieved successfully
+ *         description: Host pass details retrieved successfully
  *       '401':
  *         description: Unauthorized - Token is missing or invalid
  *       '404':
@@ -509,7 +509,7 @@ async function registerAdmin(client, data) {
 async function login(client, data) {
   const adminCollection = client.db("assigment").collection("Admin");
   const securityCollection = client.db("assigment").collection("Security");
-  const usersCollection = client.db("assigment").collection("Users");
+  const HostCollection = client.db("assigment").collection("Host");
 
   // Find the admin user
   let match = await adminCollection.findOne({ username: data.username });
@@ -521,7 +521,7 @@ async function login(client, data) {
 
   if (!match) {
     // Find the regular user
-    match = await usersCollection.findOne({ username: data.username });
+    match = await HostCollection.findOne({ username: data.username });
   }
 
   if (match) {
@@ -560,7 +560,7 @@ async function retrievePassHost(client, data, passIdentifier) {
     const passDetails = await retrievePass(client, data, passIdentifier);
     return passDetails;
   } else {
-    return 'Unauthorized - Only Security users can retrieve pass details as a host.';
+    return 'Unauthorized - Only Security Host can retrieve pass details as a host.';
   }
 };
 
@@ -572,17 +572,17 @@ async function decryptPassword(password, compare) {
 }
 
 
-//Function to register security and visitor
+//Function to register security and Host
 async function register(client, data, mydata) {
   const adminCollection = client.db("assigment").collection("Admin");
   const securityCollection = client.db("assigment").collection("Security");
-  const usersCollection = client.db("assigment").collection("Users");
+  const HostCollection = client.db("assigment").collection("Host");
 
   const tempAdmin = await adminCollection.findOne({ username: mydata.username });
   const tempSecurity = await securityCollection.findOne({ username: mydata.username });
-  const tempUser = await usersCollection.findOne({ username: mydata.username });
+  const tempHost = await HostCollection.findOne({ username: mydata.username });
 
-  if (tempAdmin || tempSecurity || tempUser) {
+  if (tempAdmin || tempSecurity || tempHost) {
     return "Username already in use, please enter another username";
   }
 
@@ -594,14 +594,14 @@ async function register(client, data, mydata) {
       email: mydata.email,
       phoneNumber: mydata.phoneNumber,
       role: "Security",
-      visitors: [],
+      Host: [],
     });
 
     return "Security registered successfully";
   }
 
   if (data.role === "Security") {
-    const result = await usersCollection.insertOne({
+    const result = await HostCollection.insertOne({
       username: mydata.username,
       password: await encryptPassword(mydata.password),
       name: mydata.name,
@@ -612,32 +612,31 @@ async function register(client, data, mydata) {
       vehicleNumber: mydata.vehicleNumber,
       icNumber: mydata.icNumber,
       phoneNumber: mydata.phoneNumber,
-      role: "Visitor",
-      records: [],
+      role: "Host",
     });
 
     const updateResult = await securityCollection.updateOne(
       { username: data.username },
-      { $push: { visitors: mydata.username } }
+      { $push: { Host: mydata.username } }
     );
 
-    return "Visitor registered successfully";
+    return "Host registered successfully";
   }
 }
 
 // Function to read host data
 async function readHost(client, data) {
   if (data.role == 'Security') {
-    const Hosts = await client.db('assigment').collection('Hosts').find().toArray();
-    return { Hosts };
+    const Host = await client.db('assigment').collection('Host').find().toArray();
+    return { Host };
   } else {
-    return 'Unauthorized - Only Security users can retrieve host data.';
+    return 'Unauthorized - Only Security Host can retrieve host data.';
   }
 };
 
 // Function to register a host
 async function registerHost(client, hostData) {
-  const hostsCollection = client.db('assigment').collection('Hosts');
+  const hostsCollection = client.db('assigment').collection('Host');
 
   // Check if the username is already in use
   const existingHost = await hostsCollection.findOne({ username: hostData.username });
@@ -645,7 +644,7 @@ async function registerHost(client, hostData) {
     return 'Username already in use, please enter another username';
   }
 
-  // Insert the host data into the Hosts collection
+  // Insert the host data into the Host collection
   const result = await hostsCollection.insertOne(hostData);
 
   return 'Host registered successfully';
@@ -653,19 +652,19 @@ async function registerHost(client, hostData) {
 
 // Function to issue a pass with the security user information
 async function issuePass(client, data, passData) {
-    const usersCollection = client.db('assigment').collection('Users');
+    const HostCollection = client.db('assigment').collection('Host');
     const securityCollection = client.db('assigment').collection('Security');
 
     // Check if the security user has the authority to issue passes
-    if (data.role !== 'Security') {
+    if (data.role !== 'Host') {
         return 'You do not have the authority to issue passes.';
     }
 
-    // Find the visitor for whom the pass is issued
-    const visitor = await usersCollection.findOne({ username: passData.visitorUsername, role: 'Visitor' });
+    // Find the Host for whom the pass is issued
+    const Host = await HostCollection.findOne({ username: passData.HostUsername, role: 'Host' });
 
-    if (!visitor) {
-        return 'Visitor not found';
+    if (!Host) {
+        return 'Host not found';
     }
 
     // Generate a unique pass identifier (you can use a library or a combination of data)
@@ -673,10 +672,10 @@ async function issuePass(client, data, passData) {
 
     // Store the pass details in the database or any other desired storage
     // You can create a new Passes collection for this purpose
-    // For simplicity, let's assume a Passes collection with a structure like { passIdentifier, visitorUsername, passDetails }
+    // For simplicity, let's assume a Passes collection with a structure like { passIdentifier, HostUsername, passDetails }
     const passRecord = {
         passIdentifier: passIdentifier,
-        visitorUsername: passData.visitorUsername,
+        VisitorUsername: passData.VisitorUsername,
         passDetails: passData.passDetails || '',
         issuedBy: data.username, // Security user who issued the pass
         issueTime: new Date()
@@ -685,18 +684,18 @@ async function issuePass(client, data, passData) {
     // Insert the pass record into the Passes collection
     await client.db('assigment').collection('Passes').insertOne(passRecord);
 
-    // Update the visitor's information (you might want to store pass details in the visitor document)
-    await usersCollection.updateOne(
-        { username: passData.visitorUsername },
+    // Update the Host's information (you might want to store pass details in the Host document)
+    await HostCollection.updateOne(
+        { username: passData.HostUsername },
         { $set: { passIdentifier: passIdentifier } }
     );
 
-    return `Visitor pass issued successfully with pass identifier: ${passIdentifier}`;
+    return `Host pass issued successfully with pass identifier: ${passIdentifier}`;
 }
 
 // Function to login as a host
 async function loginHost(client, hostData) {
-  const hostsCollection = client.db('assigment').collection('Hosts');
+  const hostsCollection = client.db('assigment').collection('Host');
 
   // Find the host user
   const host = await hostsCollection.findOne({ username: hostData.username });
@@ -736,7 +735,7 @@ async function retrievePass(client, data, passIdentifier) {
     // You can customize the response format based on your needs
     return {
       passIdentifier: passRecord.passIdentifier,
-      visitorUsername: passRecord.visitorUsername,
+      HostUsername: passRecord.HostUsername,
       passDetails: passRecord.passDetails,
       issuedBy: passRecord.issuedBy,
       issueTime: passRecord.issueTime
@@ -748,10 +747,10 @@ async function read(client, data) {
   if (data.role == 'Admin') {
     const Admins = await client.db('assigment').collection('Admin').find({ role: 'Admin' }).next();
     const Securitys = await client.db('assigment').collection('Security').find({ role: 'Security' }).toArray();
-    const Visitors = await client.db('assigment').collection('Users').find({ role: 'Visitor' }).toArray();
+    const Hosts = await client.db('assigment').collection('Host').find({ role: 'Host' }).toArray();
     const Records = await client.db('assigment').collection('Records').find().toArray();
 
-    return { Admins, Securitys, Visitors, Records };
+    return { Admins, Securitys, Hosts, Records };
   }
 
   if (data.role == 'Security') {
@@ -760,21 +759,21 @@ async function read(client, data) {
       return 'User not found';
     }
 
-    const Visitors = await client.db('assigment').collection('Users').find({ Security: data.username }).toArray();
+    const Hosts = await client.db('assigment').collection('Host').find({ Security: data.username }).toArray();
     const Records = await client.db('assigment').collection('Records').find().toArray();
 
-    return { Security, Visitors, Records };
+    return { Security, Hosts, Records };
   }
 
-  if (data.role == 'Visitor') {
-    const Visitor = await client.db('assigment').collection('Users').findOne({ username: data.username });
-    if (!Visitor) {
+  if (data.role == 'Host') {
+    const Host = await client.db('assigment').collection('Host').findOne({ username: data.username });
+    if (!Host) {
       return 'User not found';
     }
 
-    const Records = await client.db('assigment').collection('Records').find({ recordID: { $in: Visitor.records } }).toArray();
+    const Records = await client.db('assigment').collection('Records').find({ recordID: { $in: Host.records } }).toArray();
 
-    return { Visitor, Records };
+    return { Host, Records };
   }
 }
 
@@ -795,13 +794,13 @@ function generatePassIdentifier() {
 
 //Function to update data
 async function update(client, data, mydata) {
-  const usersCollection = client.db("assigment").collection("Users");
+  const HostCollection = client.db("assigment").collection("Host");
 
   if (mydata.password) {
     mydata.password = await encryptPassword(mydata.password);
   }
 
-  const result = await usersCollection.updateOne(
+  const result = await HostCollection.updateOne(
     { username: data.username },
     { $set: mydata }
   );
@@ -816,26 +815,26 @@ async function update(client, data, mydata) {
 
 //Function to delete data
 async function deleteUser(client, data) {
-  const usersCollection = client.db("assigment").collection("Users");
+  const HostCollection = client.db("assigment").collection("Host");
   const recordsCollection = client.db("assigment").collection("Records");
   const securityCollection = client.db("assigment").collection("Security");
 
   // Delete user document
-  const deleteResult = await usersCollection.deleteOne({ username: data.username });
+  const deleteResult = await HostCollection.deleteOne({ username: data.username });
   if (deleteResult.deletedCount === 0) {
     return "User not found";
   }
 
-  // Update visitors array in other users' documents
-  await usersCollection.updateMany(
-    { visitors: data.username },
-    { $pull: { visitors: data.username } }
+  // Update Hosts array in other Host' documents
+  await HostCollection.updateMany(
+    { Hosts: data.username },
+    { $pull: { Hosts: data.username } }
   );
 
-  // Update visitors array in the Security collection
+  // Update Hosts array in the Security collection
   await securityCollection.updateMany(
-    { visitors: data.username },
-    { $pull: { visitors: data.username } }
+    { Hosts: data.username },
+    { $pull: { Hosts: data.username } }
   );
 
   return "Delete Successful\nBut the records are still in the database";
@@ -848,9 +847,9 @@ function output(data) {
   if(data == 'Admin') {
     return "You are logged in as Admin\n1)register Security\n2)read all data"
   } else if (data == 'Security') {
-    return "You are logged in as Security\n1)register Visitor\n2)read security and visitor data"
-  } else if (data == 'Visitor') {
-    return "You are logged in as Visitor\n1)check in\n2)check out\n3)read visitor data\n4)update profile\n5)delete account"
+    return "You are logged in as Security\n1)register Host\n2)read security and Host data"
+  } else if (data == 'Host') {
+    return "You are logged in as Host\n1)check in\n2)check out\n3)read Host data\n4)update profile\n5)delete account"
   }
 }
 
