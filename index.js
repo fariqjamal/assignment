@@ -605,12 +605,8 @@ async function register(client, data, mydata) {
       username: mydata.username,
       password: await encryptPassword(mydata.password),
       name: mydata.name,
-      email: mydata.email,
-      
+      email: mydata.email,   
       Security: data.username,
-      company: mydata.company,
-      vehicleNumber: mydata.vehicleNumber,
-      icNumber: mydata.icNumber,
       phoneNumber: mydata.phoneNumber,
       role: "Host",
     });
@@ -746,11 +742,11 @@ async function retrievePass(client, data, passIdentifier) {
 async function read(client, data) {
   if (data.role == 'Admin') {
     const Admins = await client.db('assigment').collection('Admin').find({ role: 'Admin' }).next();
-    const Securitys = await client.db('assigment').collection('Security').find({ role: 'Security' }).toArray();
-    const Hosts = await client.db('assigment').collection('Host').find({ role: 'Host' }).toArray();
-    const Records = await client.db('assigment').collection('Records').find().toArray();
+    const Security = await client.db('assigment').collection('Security').find({ role: 'Security' }).toArray();
+    const Host = await client.db('assigment').collection('Host').find({ role: 'Host' }).toArray();
+    const Passes = await client.db('assigment').collection('Passes').find().toArray();
 
-    return { Admins, Securitys, Hosts, Records };
+    return { Admins, Security, Host, Record };
   }
 
   if (data.role == 'Security') {
@@ -759,10 +755,10 @@ async function read(client, data) {
       return 'User not found';
     }
 
-    const Hosts = await client.db('assigment').collection('Host').find({ Security: data.username }).toArray();
-    const Records = await client.db('assigment').collection('Records').find().toArray();
+    const Host = await client.db('assigment').collection('Host').find({ Security: data.username }).toArray();
+    const Passes = await client.db('assigment').collection('Passes').find().toArray();
 
-    return { Security, Hosts, Records };
+    return { Security, Host, Passes };
   }
 
   if (data.role == 'Host') {
@@ -771,9 +767,9 @@ async function read(client, data) {
       return 'User not found';
     }
 
-    const Records = await client.db('assigment').collection('Records').find({ recordID: { $in: Host.records } }).toArray();
+    const Passes = await client.db('assigment').collection('Passes').find({ recordID: { $in: Host.records } }).toArray();
 
-    return { Host, Records };
+    return { Host, Passes };
   }
 }
 
