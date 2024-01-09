@@ -482,57 +482,51 @@ app.get('/retrievePass/:passIdentifier', verifyToken, async (req, res) => {
 
 
 
+
 /**
  * @swagger
  * /retrieveHostContact/{passIdentifier}:
  *   get:
- *     summary: Retrieve host contact number by security
- *     description: Retrieve the contact number of the host based on the visitor's pass identifier. This is a public API available only to authenticated security personnel.
- *     tags:
- *       - Security 
- *     security:
- *       - bearerAuth: []
+ *     summary: Retrieve Host Contact based on Pass Identifier
+ *     description: Retrieve the contact number of the host based on a given pass identifier.
  *     parameters:
  *       - in: path
  *         name: passIdentifier
  *         required: true
- *         description: The unique identifier of the visitor's pass.
  *         schema:
  *           type: string
+ *         description: Unique identifier of the pass.
  *     responses:
  *       '200':
- *         description: Successfully retrieved host contact number.
+ *         description: Successful retrieval of host contact number.
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 hostContactNumber:
+ *                 hostContact:
  *                   type: string
- *                   description: Contact number of the destination host.
- *       '401':
- *         description: Unauthorized access.
+ *                   description: Contact number of the host.
  *       '404':
  *         description: Pass record not found.
+ *       '500':
+ *         description: Internal Server Error.
+ *       '403':
+ *         description: Forbidden - The user doesn't have the authority to retrieve host contact.
  */
 
+// Endpoint to retrieve host contact based on passIdentifier
 app.get('/retrieveHostContact/:passIdentifier', verifyToken, async (req, res) => {
     try {
-        // Extract the passIdentifier from request parameters
         const passIdentifier = req.params.passIdentifier;
-        
-        // Call the handleRetrieveHostContact function to get the host contact number
-        const hostContactNumber = await handleRetrieveHostContact(client, passIdentifier);
-        
-        // If host contact number is null, send a 404 response
-        if (!hostContactNumber) {
+        const hostContact = await handleRetrieveHostContact(client, passIdentifier);
+
+        if (hostContact === null) {
             return res.status(404).json({ error: 'Pass record not found.' });
         }
-        
-        // Return the host contact number
-        res.status(200).json({ hostContactNumber });
+
+        res.status(200).json({ hostContact });
     } catch (error) {
-        // Handle errors
         console.error(error);
         res.status(500).json({ error: 'Internal Server Error' });
     }
@@ -837,7 +831,7 @@ async function readRecords(client, data) {
 }
 
 // Function to handle retrieval of host contact number based on passIdentifier
-async function handleRetrieveHostContact(client, passIdentifier) {
+async function handleRetrieveHostContact(client, passIdentifier, data) {
     // Check if the user has the authority to read records (must be a host)
     if (data.role !== 'Security') {
         return 'You do not have the authority to retrieve Host contact';
@@ -855,7 +849,7 @@ async function handleRetrieveHostContact(client, passIdentifier) {
     return passDetails.HostphoneNumber;
 }
 
-async function deleteSecurityUser(username) {
+async function deleteSecurityUser(username, data) {
     if (data.role !== 'Admin') {
         return 'You do not have the authority to delete Security';
       }
@@ -864,7 +858,7 @@ async function deleteSecurityUser(username) {
     return result;
 }
 
-async function deleteHostUser(username) {
+async function deleteHostUser(username, data) {
     if (data.role !== 'Admin') {
         return 'You do not have the authority to delete Host';
       }
