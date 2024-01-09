@@ -253,28 +253,7 @@ async function run() {
     res.send(await read(client, data));
   });
 
-  /**
- * @swagger
- * /readSecurity:
- *   get:
- *     summary: Read security user data
- *     description: Read security user data with a valid token obtained from the loginSecurity endpoint
- *     tags:
- *       - Security
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       '200':
- *         description: Security user data retrieved successfully
- *       '401':
- *         description: Unauthorized - Token is missing or invalid
- *       '404':
- *         description: Security user not found
- */
-  app.get('/readSecurity', verifyToken, async (req, res) => {
-    let data = req.user;
-    res.send(await read(client, data));
-  });
+
 
 /**
  * @swagger
@@ -391,7 +370,7 @@ app.post('/loginHost', async (req, res) => {
  */
   app.get('/readRecords', verifyToken, async (req, res) => {
     let data = req.user;
-    res.send(await readHost(client, data));
+    res.send(await readRecords(client, data));
   });
 
 
@@ -630,10 +609,7 @@ async function issuePass(client, data, passData) {
 async function retrievePass(client, data, passIdentifier) {
     const hostCollection = client.db('assigment').collection('Host');
   
-    // Check if the user has the authority to retrieve pass details (must be a host)
-    if (data.role !== 'Host') {
-      return 'You do not have the authority to retrieve pass details.';
-    }
+    
   
     // Search for the pass record using the unique pass identifier
     const passRecord = await client.db('assigment').collection('Records').findOne({ passIdentifier: passIdentifier });
