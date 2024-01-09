@@ -489,7 +489,7 @@ app.get('/retrievePass/:passIdentifier', verifyToken, async (req, res) => {
  *     summary: Retrieve host contact number by security
  *     description: Retrieve the contact number of the host based on the visitor's pass identifier. This is a public API available only to authenticated security personnel.
  *     tags:
- *       - Security Operations
+ *       - Security 
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -547,7 +547,7 @@ app.get('/retrieveHostContact/:passIdentifier', verifyToken, async (req, res) =>
  *     summary: Delete a user (Security or Host) by admin based on role
  *     description: Allows an admin to delete either a security user or a host by specifying the role and username.
  *     tags:
- *       - Admin Operations
+ *       - Admin 
  *     security:
  *       - bearerAuth: []
  *     parameters:
