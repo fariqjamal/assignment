@@ -342,7 +342,7 @@ app.post('/registerHost', verifyToken, async (req, res) => {
  *     summary: Issue a visitor pass
  *     description: Issue a new visitor pass with a valid token obtained from the loginHost endpoint
  *     tags:
- *       - Visitor
+ *       - Host
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -395,7 +395,7 @@ app.post('/issuePass', verifyToken, async (req, res) => {
  *     summary: Login as a host
  *     description: Authenticate and log in as a host with username and password, and receive a token
  *     tags:
- *       - Security
+ *       - Host
  *     requestBody:
  *       required: true
  *       content:
@@ -431,7 +431,7 @@ app.post('/loginHost', async (req, res) => {
  *     summary: Read all host data
  *     description: Retrieve all host data using a valid token obtained from loginHost
  *     tags:
- *       - Security
+ *       - Host
  *     security:
  *       - bearerAuth: []
  *     responses:
@@ -455,9 +455,7 @@ app.get('/readHost', verifyToken, async (req, res) => {
  *     summary: Retrieve visitor pass details as a host
  *     description: Retrieve pass details for a visitor using the pass identifier with a valid token obtained from loginHost
  *     tags:
- *       - Security
- *     security:
- *       - bearerAuth: []
+ *       - Visitor
  *     parameters:
  *       - in: path
  *         name: passIdentifier
