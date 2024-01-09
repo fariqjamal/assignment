@@ -489,7 +489,7 @@ app.get('/retrievePass/:passIdentifier', verifyToken, async (req, res) => {
  *   get:
  *     summary: Retrieve Host Contact based on Pass Identifier
  *     description: Retrieve the contact number of the host based on a given pass identifier.
- *   tags:
+ *     tags:
  *       - Security
  *     parameters:
  *       - in: path
@@ -498,6 +498,8 @@ app.get('/retrievePass/:passIdentifier', verifyToken, async (req, res) => {
  *         schema:
  *           type: string
  *         description: Unique identifier of the pass.
+ *     security:
+ *       - bearerAuth: []  # This indicates that the endpoint requires a bearer token for authentication
  *     responses:
  *       '200':
  *         description: Successful retrieval of host contact number.
@@ -517,7 +519,6 @@ app.get('/retrievePass/:passIdentifier', verifyToken, async (req, res) => {
  *         description: Forbidden - The user doesn't have the authority to retrieve host contact.
  */
 
-// Endpoint to retrieve host contact based on passIdentifier
 app.get('/retrieveHostContact/:passIdentifier', verifyToken, async (req, res) => {
     try {
         const passIdentifier = req.params.passIdentifier;
