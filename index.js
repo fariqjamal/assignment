@@ -324,7 +324,7 @@ async function run() {
  *         description: Username already in use, please enter another username
  */
 
-app.post('/registerSecurity', verifyToken, async (req, res) => {
+app.post('/registerHost', verifyToken, async (req, res) => {
     let data = req.user;
     let mydata = req.body;
     res.send(await register(client, data, mydata));
