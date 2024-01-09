@@ -402,7 +402,9 @@ app.post('/loginHost', async (req, res) => {
  *     summary: Issue a visitor pass
  *     description: Issue a visitor pass by a host with visitor's name, purpose of visit, host username, and host phone number.
  *     tags:
- *       - Pass Management
+ *       - Host
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -440,7 +442,7 @@ app.post('/loginHost', async (req, res) => {
  *     summary: Retrieve a visitor pass details
  *     description: Retrieve details of a visitor pass by a host using the unique pass identifier.
  *     tags:
- *       - Pass Management
+ *       - Visitor
  *     parameters:
  *       - in: path
  *         name: passIdentifier
