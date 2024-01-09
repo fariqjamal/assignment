@@ -418,34 +418,70 @@ app.post('/loginHost', async (req, res) => {
  * @swagger
  * /retrievePass/{passIdentifier}:
  *   get:
- *     summary: Retrieve a visitor pass details
- *     description: Retrieve details of a visitor pass by a host using the unique pass identifier.
+ *     summary: Retrieve pass details by a host
+ *     description: Retrieve pass details using the provided pass identifier with host authorization.
  *     tags:
- *       - Visitor
+ *       - Pass Management
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: passIdentifier
  *         required: true
+ *         description: The unique identifier of the pass to retrieve.
  *         schema:
  *           type: string
- *         description: Unique identifier of the visitor pass
  *     responses:
  *       '200':
- *         description: Successfully retrieved the visitor pass details.
+ *         description: Successfully retrieved pass details.
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/PassRecord'
- *       '403':
- *         description: Unauthorized. Only hosts can retrieve pass details.
+ *               type: object
+ *               properties:
+ *                 passIdentifier:
+ *                   type: string
+ *                 visitorUsername:
+ *                   type: string
+ *                 passDetails:
+ *                   type: string
+ *                 issuedBy:
+ *                   type: string
+ *                 HostphoneNumber:
+ *                   type: string
+ *                 issueTime:
+ *                   type: string
+ *                   format: date-time
  *       '404':
  *         description: Pass record not found.
  */
-    app.get('/retrievePass/:passIdentifier', verifyToken, async (req, res) => {
-        let data = req.user;
-        let passIdentifier = req.params.passIdentifier;
-        res.send(await retrievePass(client, data, passIdentifier));
-    });
+
+    // Endpoint to retrieve a pass using the pass identifier by a host
+app.get('/retrievePass/:passIdentifier', verifyToken, async (req, res) => {
+    try {
+        // Extract the passIdentifier from request parameters
+        const passIdentifier = req.params.passIdentifier;
+        
+        // Assuming req.user contains the user data after token verification
+        const userData = req.user;
+        
+        // Call the retrievePass function to fetch the pass details by host
+        const passDetails = await retrievePass(client, userData, passIdentifier);
+        
+        // If pass record not found, send a 404 response
+        if (passDetails === 'Pass record not found.') {
+            return res.status(404).json({ error: 'Pass record not found.' });
+        }
+        
+        // Send the pass details as the response
+        res.status(200).json(passDetails);
+    } catch (error) {
+        // Handle errors
+        console.error(error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
 
 
   
@@ -608,9 +644,7 @@ async function issuePass(client, data, passData) {
 // Function to retrieve pass details by a host
 async function retrievePass(client, data, passIdentifier) {
     const hostCollection = client.db('assigment').collection('Host');
-  
-    
-  
+
     // Search for the pass record using the unique pass identifier
     const passRecord = await client.db('assigment').collection('Records').findOne({ passIdentifier: passIdentifier });
   
