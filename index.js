@@ -389,7 +389,6 @@ app.post('/loginHost', async (req, res) => {
     let data = req.user;
     res.send(await read(client, data));
   });
-
 /**
  * @swagger
  * /issuePass:
@@ -589,76 +588,58 @@ async function register(client, data, mydata) {
   }
 }
 
-// Function to issue a pass
+// Function to issue a pass to a visitor by a host
 async function issuePass(client, data, passData) {
     const hostCollection = client.db('assigment').collection('Host');
   
-    // Check if the security user has the authority to issue passes
+    // Check if the user has the authority to issue passes (must be a host)
     if (data.role !== 'Host') {
       return 'You do not have the authority to issue passes.';
-    }
-  
-    // Find the visitor for whom the pass is issued
-    const host = await hostCollection.findOne({ username: passData.visitorUsername, role: 'Host' });
-  
-    if (!host) {
-      return 'host not found';
     }
   
     // Generate a unique pass identifier (you can use a library or a combination of data)
     const passIdentifier = generatePassIdentifier();
   
     // Store the pass details in the database or any other desired storage
-    // You can create a new Passes collection for this purpose
-    // For simplicity, let's assume a Passes collection with a structure like { passIdentifier, visitorUsername, passDetails }
     const passRecord = {
       passIdentifier: passIdentifier,
-      visitorUsername: passData.visitorUsername,
-      passDetails: passData.passDetails || '',
-      issuedBy: data.username, // Security user who issued the pass
-      HostphoneNumber:data.phoneNumber,
+      visitorName: passData.visitorName,
+      purpose: passData.purpose || '',
+      issuedByHost: data.username, // Host who issued the pass
+      hostPhoneNumber: data.phoneNumber, // Phone number of the host
       issueTime: new Date()
     };
   
-    // Insert the pass record into the Passes collection
+    // Insert the pass record into the Passes collection (Assuming 'Records' is the collection name)
     await client.db('assigment').collection('Records').insertOne(passRecord);
   
-    // Update the visitor's information (you might want to store pass details in the visitor document)
-    await hostCollection.updateOne(
-      { username: passData.visitorUsername },
-      { $set: { passIdentifier: passIdentifier } }
-    );
-  
+    // Return a success message with the pass identifier
     return `Visitor pass issued successfully with pass identifier: ${passIdentifier}`;
 }
 
-// Function to retrieve pass details
+// Function to retrieve pass details by a host
 async function retrievePass(client, data, passIdentifier) {
-    const passesCollection = client.db('assigment').collection('Records');
     const hostCollection = client.db('assigment').collection('Host');
   
-    // Check if the security user has the authority to retrieve pass details
+    // Check if the user has the authority to retrieve pass details (must be a host)
     if (data.role !== 'Host') {
       return 'You do not have the authority to retrieve pass details.';
     }
   
-    // Find the pass record using the pass identifier
-    const passRecord = await passesCollection.findOne({ passIdentifier: passIdentifier });
+    // Search for the pass record using the unique pass identifier
+    const passRecord = await client.db('assigment').collection('Records').findOne({ passIdentifier: passIdentifier });
   
+    // If pass record not found, return an appropriate message
     if (!passRecord) {
-      return 'Pass not found or unauthorized to retrieve';
+      return 'Pass record not found.';
     }
   
-    // You can customize the response format based on your needs
-    return {
-      passIdentifier: passRecord.passIdentifier,
-      visitorUsername: passRecord.visitorUsername,
-      passDetails: passRecord.passDetails,
-      issuedBy: passRecord.issuedBy,
-      HostphoneNumber:passRecord.HostphoneNumber,
-      issueTime: passRecord.issueTime
-    };
+    // Return the pass details
+    return passRecord;
 }
+
+
+
 
 //Function to read data
 async function read(client, data) {
@@ -684,12 +665,12 @@ async function read(client, data) {
   }
 
   if (data.role == 'Host') {
-    const Hosts = await client.db('assigment').collection('Host').findOne({ username: data.username });
+    const Hosts = await client.db('assigment').collection('Host').toArray();
     if (!Visitor) {
       return 'User not found';
     }
 
-    const Records = await client.db('assigment').collection('Records').find({ recordID: { $in: Visitor.records } }).toArray();
+    const Records = await client.db('assigment').collection('Records').toArray();
 
     return { Hosts, Records };
   }
