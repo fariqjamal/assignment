@@ -489,6 +489,8 @@ app.get('/retrievePass/:passIdentifier', verifyToken, async (req, res) => {
  *   get:
  *     summary: Retrieve Host Contact based on Pass Identifier
  *     description: Retrieve the contact number of the host based on a given pass identifier.
+ *   tags:
+ *       - Security
  *     parameters:
  *       - in: path
  *         name: passIdentifier
