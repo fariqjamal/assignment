@@ -419,7 +419,7 @@ app.post('/loginHost', async (req, res) => {
  *     summary: Retrieve pass details by a host
  *     description: Retrieve pass details using the provided pass identifier with host authorization.
  *     tags:
- *       - Pass Management
+ *       - Visitor
  *     security:
  *       - bearerAuth: []
  *     parameters:
