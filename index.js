@@ -476,6 +476,60 @@ app.get('/retrieveContactNumber/:passIdentifier', verifyToken, async (req, res) 
 
 /**
  * @swagger
+ * /registerHost:
+ *   post:
+ *     summary: Register a new host
+ *     description: Register a new host with username, password, name, email, and phoneNumber
+ *     tags:
+ *       - Security
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               username:
+ *                 type: string
+ *                 description: The username of the host
+ *               password:
+ *                 type: string
+ *                 description: The password of the host
+ *               name:
+ *                 type: string
+ *                 description: The name of the host
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: The email of the host
+ *               phoneNumber:
+ *                 type: string
+ *                 description: The phone number of the host
+ *             required:
+ *               - username
+ *               - password
+ *               - name
+ *               - email
+ *               - phoneNumber
+ *     responses:
+ *       '200':
+ *         description: Host registered successfully
+ *       '400':
+ *         description: Username already in use, please enter another username
+ */
+app.post('/registerHost', async (req, res) => {
+  try {
+    const data = req.body;
+    const result = await registerHost(client, data);
+    res.status(200).json({ message: result });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+/**
+ * @swagger
  * /deleteUser/{username}:
  *   delete:
  *     summary: Delete a user (Security or Host) by username
@@ -823,6 +877,30 @@ async function retrieveHostContact(client, data, passIdentifier) {
       hostContact: hostInfo.phoneNumber
   };
 }
+
+/**
+ * Function to register a host
+ * @param {Object} client - MongoDB client
+ * @param {Object} data - Host data to be registered
+ * @returns {Promise<string>} - Resolves with a success message
+ */
+async function registerHost(client, data) {
+  try {
+    // Your logic to register the host in MongoDB
+    // For example:
+    // const result = await client.db("yourDbName").collection("Hosts").insertOne(data);
+    // return result;
+
+    // For demonstration, let's just return a mock message
+    return 'Host registered successfully';
+  } catch (error) {
+    throw new Error('Failed to register host');
+  }
+}
+
+/**
+ * Endpoint to handle host registration
+ */
 
 async function deleteUser(client, username) {
   const securityCollection = client.db("assigment").collection("Security");
