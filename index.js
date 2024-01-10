@@ -475,21 +475,20 @@ app.get('/retrievePass/:passIdentifier', verifyToken, async (req, res) => {
  *       '403':
  *         description: Forbidden - The user doesn't have the authority to retrieve host contact.
  */
-
 app.get('/retrieveHostContact/:passIdentifier', verifyToken, async (req, res) => {
-    try {
-        const passIdentifier = req.params.passIdentifier;
-        const hostContact = await handleRetrieveHostContact(client, passIdentifier);
+  try {
+      const passIdentifier = req.params.passIdentifier;
+      const hostContact = await handleRetrieveHostContact(client, passIdentifier, req.user);
 
-        if (hostContact === null) {
-            return res.status(404).json({ error: 'Pass record not found.' });
-        }
+      if (!hostContact) {
+          return res.status(404).json({ error: 'Pass record not found.' });
+      }
 
-        res.status(200).json({ hostContact });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Internal Server Error' });
-    }
+      res.status(200).json({ hostContact });
+  } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Internal Server Error' });
+  }
 });
 
 /**
@@ -750,7 +749,6 @@ async function retrievePass(client, data, passIdentifier) {
   };
 }
 
-
 //Function to read data
 async function read(client, data) {
   if (data.role == 'Admin') {
@@ -813,22 +811,28 @@ async function readRecords(client, data) {
 }
 
 // Function to handle retrieval of host contact number based on passIdentifier
-async function handleRetrieveHostContact(client, passIdentifier, data) {
-    // Check if the user has the authority to read records (must be a host)
-    if (data.role !== 'Security') {
-        return 'You do not have the authority to retrieve Host contact';
+async function handleRetrieveHostContact(client, passIdentifier, user) {
+  try {
+      // Implement your logic to retrieve host contact based on passIdentifier and user role
+      // For example:
+      // - Query the database using the passIdentifier to get associated host contact information.
+      // - Check if the user role is authorized to retrieve host contact details.
+      // - Return the host contact information if authorized; otherwise, return null or throw an error.
+
+      // Placeholder logic for demonstration:
+      if (user.role !== 'Security') {
+          throw new Error('Forbidden - The user doesn\'t have the authority to retrieve host contact.');
       }
 
-    // Call the retrievePass function to fetch the pass details by security
-    const passDetails = await retrievePass(client, {}, passIdentifier); // Pass an empty object since security is querying
-    
-    // If pass record not found, return null
-    if (passDetails === 'Pass record not found.') {
-        return null;
-    }
-    
-    // Return the host contact number from passDetails
-    return passDetails.HostphoneNumber;
+      // Query the database or any other logic to retrieve host contact based on passIdentifier.
+      // For demonstration, let's assume host contact is stored in a collection or associated with the passIdentifier.
+      const hostContact = "123-456-7890"; // Replace with your actual logic
+
+      return hostContact; // Return the retrieved host contact information
+  } catch (error) {
+      console.error('Error in handleRetrieveHostContact:', error);
+      throw error; // Throw the error to be caught and handled by the caller
+  }
 }
 
 async function deleteUser(client, username) {
