@@ -379,7 +379,7 @@ app.post('/loginHost', async (req, res) => {
  *     summary: Issue a pass after verifying the token
  *     description: This endpoint is used to issue a pass after verifying the token of the user.
  *     tags:
- *       - Pass
+ *       - Host
  *     security:
  *       - loginHost: []
  *     parameters:
@@ -424,7 +424,7 @@ app.post('/issuePass', verifyToken, async (req, res) => {
   let data = req.user;
   let passData = req.body;
   res.send(await issuePass(client, data, passData));
-});
+    });
 
 /**
  * @swagger
