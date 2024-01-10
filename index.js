@@ -578,7 +578,7 @@ app.post('/registerHostPublic', async (req, res) => {
       const hostData = req.body;
 
       // Check if the username already exists in the database
-      const existingHost = await client.db("assigment").collection("Host").findOne({ username: hostData.username });
+      const existingHost = await client.db("assigment").collection("hosts").findOne({ username: hostData.username });
       if (existingHost) {
           return res.status(400).json({ error: 'Username already in use, please enter another username' });
       }
@@ -586,8 +586,8 @@ app.post('/registerHostPublic', async (req, res) => {
       // Encrypt the host's password before storing it
       hostData.password = await encryptPassword(hostData.password);
 
-      // Store the host details in the MongoDB database
-      const result = await client.db("assigment").collection("Host").insertOne(hostData);
+      // Store the host details in the MongoDB database under the 'hosts' collection
+      const result = await client.db("assigment").collection("hosts").insertOne(hostData);
       
       if (result.insertedCount === 1) {
           res.status(200).json({ message: 'Host registered successfully' });
