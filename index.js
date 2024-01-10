@@ -370,24 +370,16 @@ app.post('/loginHost', async (req, res) => {
     let data = req.user;
     res.send(await readRecords(client, data));
   });
-
-
 /**
  * @swagger
- * /issuePass:
+ * /VisitorPass:
  *   post:
- *     summary: Issue a pass after verifying the token
- *     description: This endpoint is used to issue a pass after verifying the token of the user.
+ *     summary: Issue a visitor pass
+ *     description: Issue a new visitor pass with a valid token obtained from loginHost
  *     tags:
  *       - Host
  *     security:
- *       - loginHost: []
- *     parameters:
- *       - in: header
- *         name: Authorization
- *         description: Token for authentication. This should be in the format "Bearer {token}".
- *         required: true
- *         type: string
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -395,43 +387,34 @@ app.post('/loginHost', async (req, res) => {
  *           schema:
  *             type: object
  *             properties:
- *               // Define your request body properties here
- *               // Example:
- *               passType:
+ *               visitorUsername:
  *                 type: string
- *                 description: Type of the pass to be issued.
- *                 example: 'Monthly'
- *               // Add other properties as needed
+ *                 description: The username of the visitor for whom the pass is issued
+ *               phoneNumber:
+ *                 type: string
+ *                 description: Additional details for the pass (optional)
+ *             required:
+ *               - visitorUsername
  *     responses:
- *       200:
- *         description: Pass issued successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 // Define your response properties here
- *                 // Example:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: 'Pass issued successfully'
- *       // Add other response codes as needed
+ *       '200':
+ *         description: Visitor pass issued successfully, returns a unique pass identifier
+ *       '401':
+ *         description: Unauthorized - Token is missing or invalid
+ *       '404':
+ *         description: Visitor not found
  */
-app.post('/issuePass', verifyToken, async (req, res) => {
+app.post('/VisitorPass', verifyToken, async (req, res) => {
   let data = req.user;
   let passData = req.body;
-  res.send(await issuePass(client, data, passData));
-    });
+  res.send(await VisitorPass(client, data, passData));
+});
 
 /**
  * @swagger
  * /retrievePass/{passIdentifier}:
  *   get:
- *     summary: Retrieve pass details by a host
- *     description: Retrieve pass details using the provided pass identifier with host authorization.
+ *     summary: Retrieve visitor pass details
+ *     description: Retrieve pass details for a visitor using the pass identifier
  *     tags:
  *       - Visitor
  *     security:
@@ -440,62 +423,22 @@ app.post('/issuePass', verifyToken, async (req, res) => {
  *       - in: path
  *         name: passIdentifier
  *         required: true
- *         description: The unique identifier of the pass to retrieve.
+ *         description: The unique pass identifier
  *         schema:
  *           type: string
  *     responses:
  *       '200':
- *         description: Successfully retrieved pass details.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 passIdentifier:
- *                   type: string
- *                 visitorUsername:
- *                   type: string
- *                 passDetails:
- *                   type: string
- *                 issuedBy:
- *                   type: string
- *                 HostphoneNumber:
- *                   type: string
- *                 issueTime:
- *                   type: string
- *                   format: date-time
+ *         description: Visitor pass details retrieved successfully
+ *       '401':
+ *         description: Unauthorized - Token is missing or invalid
  *       '404':
- *         description: Pass record not found.
+ *         description: Pass not found or unauthorized to retrieve
  */
-
-    // Endpoint to retrieve a pass using the pass identifier by a host
 app.get('/retrievePass/:passIdentifier', verifyToken, async (req, res) => {
-    try {
-        // Extract the passIdentifier from request parameters
-        const passIdentifier = req.params.passIdentifier;
-        
-        // Assuming req.user contains the user data after token verification
-        const userData = req.user;
-        
-        // Call the retrievePass function to fetch the pass details by host
-        const passDetails = await retrievePass(client, userData, passIdentifier);
-        
-        // If pass record not found, send a 404 response
-        if (passDetails === 'Pass record not found.') {
-            return res.status(404).json({ error: 'Pass record not found.' });
-        }
-        
-        // Send the pass details as the response
-        res.status(200).json(passDetails);
-    } catch (error) {
-        // Handle errors
-        console.error(error);
-        res.status(500).json({ error: 'Internal Server Error' });
-    }
+  let data = req.user;
+  let passIdentifier = req.params.passIdentifier;
+  res.send(await retrievePass(client, data, passIdentifier));
 });
-
-
-
 
 /**
  * @swagger
@@ -673,7 +616,35 @@ async function login(client, data) {
   }
 }
 
+// Function to issue a pass
+async function VisitorPass(client, data, passData) {
+  const passesCollection = client.db('assigment').collection('Passes');
+  
 
+  // Check if the security user has the authority to issue passes
+  if (data.role !== 'Host') {
+      return 'You do not have the authority to issue passes.';
+  }
+
+  // Generate a unique pass identifier (you can use a library or a combination of data)
+  const passIdentifier = generatePassIdentifier();
+
+  // Store the pass details in the database or any other desired storage
+  // For simplicity, let's assume a Passes collection with a structure like { passIdentifier, visitorUsername, phoneNumber }
+  const passRecord = {
+      passIdentifier: passIdentifier,
+      visitorUsername: passData.visitorUsername,
+      phoneNumber: passData.phoneNumber || '',
+      issuedBy: data.username, // Security user who issued the pass
+      issueTime: new Date()
+  };
+
+  // Insert the pass record into the Passes collection
+  await passesCollection.insertOne(passRecord);
+
+  // Return the unique pass identifier to the client
+  return `Visitor pass issued successfully with pass identifier: ${passIdentifier}`;
+}
 
 //Function to encrypt password
 async function encryptPassword(password) {
@@ -681,13 +652,38 @@ async function encryptPassword(password) {
   return hash 
 }
 
-
 //Function to decrypt password
 async function decryptPassword(password, compare) {
   const match = await bcrypt.compare(password, compare)
   return match
 }
 
+// Function to retrieve pass details
+async function retrievePass(client, data, passIdentifier) {
+  const passesCollection = client.db('assigment').collection('Passes');
+  const securityCollection = client.db('assigment').collection('Security');
+
+  // Check if the security user has the authority to retrieve pass details
+  if (data.role !== 'Host') {
+    return 'You do not have the authority to retrieve pass details.';
+  }
+
+  // Find the pass record using the pass identifier
+  const passRecord = await passesCollection.findOne({ passIdentifier: passIdentifier });
+
+  if (!passRecord) {
+    return 'Pass not found or unauthorized to retrieve';
+  }
+
+  // You can customize the response format based on your needs
+  return {
+    passIdentifier: passRecord.passIdentifier,
+    visitorUsername: passRecord.visitorUsername,
+    phoneNumber: passRecord.phoneNumber,
+    issuedBy: passRecord.issuedBy,
+    issueTime: passRecord.issueTime
+  };
+}
 
 //Function to register security and visitor
 async function register(client, data, mydata) {
@@ -737,35 +733,6 @@ async function register(client, data, mydata) {
   }
 }
 
-// Function to issue a pass to a visitor by a host
-async function issuePass(client, data, passData) {
-    const hostCollection = client.db('assigment').collection('Host');
-  
-    // Check if the user has the authority to issue passes (must be a host)
-    if (data.role !== 'Host') {
-      return 'You do not have the authority to issue passes.';
-    }
-  
-    // Generate a unique pass identifier (you can use a library or a combination of data)
-    const passIdentifier = generatePassIdentifier();
-  
-    // Store the pass details in the database or any other desired storage
-    const passRecord = {
-      passIdentifier: passIdentifier,
-      visitorName: passData.visitorName,
-      purpose: passData.purpose || '',
-      issuedByHost: data.username, // Host who issued the pass
-      hostPhoneNumber: data.phoneNumber, // Phone number of the host
-      issueTime: new Date()
-    };
-  
-    // Insert the pass record into the Passes collection (Assuming 'Records' is the collection name)
-    await client.db('assigment').collection('Records').insertOne(passRecord);
-  
-    // Return a success message with the pass identifier
-    return `Visitor pass issued successfully with pass identifier: ${passIdentifier}`;
-}
-
 // Function to retrieve pass details by a host
 async function retrievePass(client, data, passIdentifier) {
     const hostCollection = client.db('assigment').collection('Host');
@@ -781,9 +748,6 @@ async function retrievePass(client, data, passIdentifier) {
     // Return the pass details
     return passRecord;
 }
-
-
-
 
 //Function to read data
 async function read(client, data) {
@@ -833,7 +797,6 @@ function generatePassIdentifier() {
     return passIdentifier;
 }
   
-
 async function readRecords(client, data) {
     // Check if the user has the authority to read records (must be a host)
     if (data.role !== 'Host') {
@@ -883,9 +846,6 @@ async function deleteHostUser(username, data) {
     const result = await hostCollection.deleteOne({ username: username });
     return result;
 }
-
-
-
 
 //Function to output
 function output(data) {
