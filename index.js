@@ -826,7 +826,7 @@ async function handleRetrieveHostContact(client, passIdentifier, user) {
 
       // Query the database or any other logic to retrieve host contact based on passIdentifier.
       // For demonstration, let's assume host contact is stored in a collection or associated with the passIdentifier.
-      const hostContact = "123-456-7890"; // Replace with your actual logic
+      const hostContact = mydata.phoneNumber; // Replace with your actual logic
 
       return hostContact; // Return the retrieved host contact information
   } catch (error) {
