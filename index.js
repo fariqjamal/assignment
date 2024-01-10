@@ -15,7 +15,7 @@ const options = {
     definition: {
         openapi: '3.0.0',
         info: {
-            title: 'Welcome to web app Secure Info',
+            title: 'Welcome to web app Group 20',
             version: '1.0.0'
         },
         components: {  // Add 'components' section
