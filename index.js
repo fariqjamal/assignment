@@ -492,53 +492,54 @@ app.get('/retrieveHostContact/:passIdentifier', verifyToken, async (req, res) =>
     }
 });
 
-
-
 /**
  * @swagger
  * /deleteUser/{username}:
  *   delete:
- *     summary: Delete a user by admin based on username
- *     description: Allows an admin to delete a user by specifying the username.
+ *     summary: Delete a user (Security or Host) by username
+ *     description: Delete a Security or Host user by their username. Only accessible by Admin.
  *     tags:
- *       - Admin 
+ *       - Admin
  *     security:
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: username
  *         required: true
- *         description: The username of the user to be deleted.
+ *         description: Username of the user to be deleted
  *         schema:
  *           type: string
  *     responses:
  *       '200':
- *         description: User deleted successfully.
+ *         description: User deleted successfully
  *       '401':
- *         description: Unauthorized access.
+ *         description: Unauthorized - Token is missing or invalid
+ *       '403':
+ *         description: Forbidden - Token is not associated with admin access
  *       '404':
- *         description: User not found.
- *       '500':
- *         description: Internal Server Error.
+ *         description: User not found
  */
 
 app.delete('/deleteUser/:username', verifyToken, async (req, res) => {
   try {
-    const username = req.params.username;
-    console.log(`Attempting to delete user: ${username}`);
-
-    const result = await deleteUserByUsername(username, req.authData.role);
-    
-    if (result.deletedCount === 1) {
-      console.log(`User ${username} deleted successfully.`);
-      return res.status(200).json({ message: 'User deleted successfully.' });
-    } else {
-      console.log(`User ${username} not found.`);
-      return res.status(404).json({ error: 'User not found.' });
+    // Check if the logged-in user is an admin
+    if (req.user.role !== 'Admin') {
+      return res.status(403).json({ error: 'Forbidden - Only admins can perform this action.' });
     }
+
+    const username = req.params.username;
+    const resultMessage = await deleteUser(client, username);
+    
+    // Handle the result message
+    if (resultMessage === 'User not found.') {
+      return res.status(404).json({ error: resultMessage });
+    } else {
+      return res.status(200).json({ message: resultMessage });
+    }
+
   } catch (error) {
-    console.error("Error deleting user:", error.message);
-    return res.status(500).json({ error: 'Internal Server Error' }); // Generic error response
+    console.error(error);
+    return res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
@@ -830,20 +831,26 @@ async function handleRetrieveHostContact(client, passIdentifier, data) {
     return passDetails.HostphoneNumber;
 }
 
-// Function to Delete User by Username
-async function deleteUserByUsername(username, userRole) {
-  if (userRole !== 'Admin') {
-    throw new Error('You do not have the authority to delete users.');
+async function deleteUser(client, username) {
+  const securityCollection = client.db("assigment").collection("Security");
+  const hostCollection = client.db("assigment").collection("Host");
+
+  // Check if the user exists in Security collection
+  let user = await securityCollection.findOne({ username: username });
+  if (user) {
+    await securityCollection.deleteOne({ username: username });
+    return 'Security user deleted successfully.';
   }
 
-  try {
-    const collection = client.db('assignment').collection('Users'); 
-    const result = await collection.deleteOne({ username: username });
-    return result;
-  } catch (error) {
-    console.error("Database operation failed:", error.message);
-    throw new Error('Database operation failed'); // Throw a more generic error
+  // Check if the user exists in Host collection
+  user = await hostCollection.findOne({ username: username });
+  if (user) {
+    await hostCollection.deleteOne({ username: username });
+    return 'Host user deleted successfully.';
   }
+
+  // If the user doesn't exist in Security or Host collection
+  return 'User not found.';
 }
 
 //Function to output
