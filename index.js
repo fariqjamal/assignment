@@ -496,21 +496,15 @@ app.get('/retrieveHostContact/:passIdentifier', verifyToken, async (req, res) =>
 
 /**
  * @swagger
- * /deleteUser/{role}/{username}:
+ * /deleteUser/{username}:
  *   delete:
- *     summary: Delete a user (Security or Host) by admin based on role
- *     description: Allows an admin to delete either a security user or a host by specifying the role and username.
+ *     summary: Delete a user by admin based on username
+ *     description: Allows an admin to delete a user by specifying the username.
  *     tags:
  *       - Admin 
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: path
- *         name: role
- *         required: true
- *         description: The role of the user to be deleted (Security or Host).
- *         schema:
- *           type: string
  *       - in: path
  *         name: username
  *         required: true
@@ -526,33 +520,23 @@ app.get('/retrieveHostContact/:passIdentifier', verifyToken, async (req, res) =>
  *         description: User not found.
  */
 
-app.delete('/deleteUser/:role/:username', verifyToken, async (req, res) => {
-    try {
-        const role = req.params.role.toLowerCase(); // Convert role to lowercase for comparison
-        const username = req.params.username;
+app.delete('/deleteUser/:username', verifyToken, async (req, res) => {
+  try {
+    const username = req.params.username;
 
-        let deleteResult;
-
-        if (role === 'security') {
-            deleteResult = await deleteSecurityUser(username);
-        } else if (role === 'host') {
-            deleteResult = await deleteHostUser(username);
-        } else {
-            return res.status(400).json({ error: 'Invalid role specified.' });
-        }
-
-        if (deleteResult.deletedCount === 1) {
-            return res.status(200).json({ message: 'User deleted successfully.' });
-        } else {
-            return res.status(404).json({ error: 'User not found.' });
-        }
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Internal Server Error' });
+    const result = await deleteUserByUsername(username, req.authData.role);
+    
+    if (result.deletedCount === 1) {
+      return res.status(200).json({ message: 'User deleted successfully.' });
+    } else {
+      return res.status(404).json({ error: 'User not found.' });
     }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
 });
 
-  
 }
 
 run().catch(console.error);
@@ -841,35 +825,14 @@ async function handleRetrieveHostContact(client, passIdentifier, data) {
     return passDetails.HostphoneNumber;
 }
 
-// Delete User Endpoint
-app.delete('/deleteUser/:role/:username', verifyToken, async (req, res) => {
-  try {
-    const { role, username } = req.params;
-
-    if (role !== 'security' && role !== 'host') {
-      return res.status(400).json({ error: 'Invalid role specified.' });
-    }
-
-    const result = await deleteUserByUsername(role, username, req.authData.role);
-    if (result.deletedCount === 1) {
-      return res.status(200).json({ message: 'User deleted successfully.' });
-    } else {
-      return res.status(404).json({ error: 'User not found.' });
-    }
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Internal Server Error' });
-  }
-});
-
-// Function to Delete User by Role
-async function deleteUserByUsername(role, username, userRole) {
+// Function to Delete User by Username
+async function deleteUserByUsername(username, userRole) {
   if (userRole !== 'Admin') {
     throw new Error('You do not have the authority to delete users.');
   }
 
-  const collectionName = role.charAt(0).toUpperCase() + role.slice(1); // Convert role to capitalize the first letter
-  const collection = client.db('assignment').collection(collectionName);
+  // Assuming you have a single collection where you need to delete the user by username.
+  const collection = client.db('assignment').collection('Users'); // Update 'Users' with your actual collection name if different.
   const result = await collection.deleteOne({ username: username });
   return result;
 }
