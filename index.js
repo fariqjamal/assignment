@@ -525,16 +525,20 @@ app.get('/retrieveHostContact/:passIdentifier', verifyToken, async (req, res) =>
 app.delete('/deleteUser/:username', verifyToken, async (req, res) => {
   try {
     const username = req.params.username;
+    console.log(`Attempting to delete user: ${username}`);
+
     const result = await deleteUserByUsername(username, req.authData.role);
     
     if (result.deletedCount === 1) {
+      console.log(`User ${username} deleted successfully.`);
       return res.status(200).json({ message: 'User deleted successfully.' });
     } else {
+      console.log(`User ${username} not found.`);
       return res.status(404).json({ error: 'User not found.' });
     }
   } catch (error) {
     console.error("Error deleting user:", error.message);
-    res.status(500).json({ error: 'Internal Server Error' }); // Generic error response
+    return res.status(500).json({ error: 'Internal Server Error' }); // Generic error response
   }
 });
 
@@ -841,6 +845,7 @@ async function deleteUserByUsername(username, userRole) {
     throw new Error('Database operation failed'); // Throw a more generic error
   }
 }
+
 //Function to output
 function output(data) {
   if(data == 'Admin') {
