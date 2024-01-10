@@ -810,28 +810,25 @@ async function readRecords(client, data) {
     return records;
 }
 
-// Function to handle retrieval of host contact number based on passIdentifier
 async function handleRetrieveHostContact(client, passIdentifier, user) {
   try {
-      // Implement your logic to retrieve host contact based on passIdentifier and user role
-      // For example:
-      // - Query the database using the passIdentifier to get associated host contact information.
-      // - Check if the user role is authorized to retrieve host contact details.
-      // - Return the host contact information if authorized; otherwise, return null or throw an error.
-
-      // Placeholder logic for demonstration:
       if (user.role !== 'Security') {
           throw new Error('Forbidden - The user doesn\'t have the authority to retrieve host contact.');
       }
 
-      // Query the database or any other logic to retrieve host contact based on passIdentifier.
-      // For demonstration, let's assume host contact is stored in a collection or associated with the passIdentifier.
-      const hostContact = mydata.phoneNumber; // Replace with your actual logic
+      // Query the database using the passIdentifier to retrieve host contact information.
+      const passRecord = await client.db('assigment').collection('Passes').findOne({ passIdentifier: passIdentifier });
 
-      return hostContact; // Return the retrieved host contact information
+      if (!passRecord) {
+          throw new Error('Pass record not found.');
+      }
+
+      // Return the host contact information
+      return passRecord.hostPhoneNumber;
+
   } catch (error) {
       console.error('Error in handleRetrieveHostContact:', error);
-      throw error; // Throw the error to be caught and handled by the caller
+      throw error;
   }
 }
 
