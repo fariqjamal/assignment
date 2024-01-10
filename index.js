@@ -841,22 +841,37 @@ async function handleRetrieveHostContact(client, passIdentifier, data) {
     return passDetails.HostphoneNumber;
 }
 
-async function deleteSecurityUser(username, data) {
-    if (data.role !== 'Admin') {
-        return 'You do not have the authority to delete Security';
-      }
-    const securityCollection = client.db('assigment').collection('Security');
-    const result = await securityCollection.deleteOne({ username: username });
-    return result;
-}
+// Delete User Endpoint
+app.delete('/deleteUser/:role/:username', verifyToken, async (req, res) => {
+  try {
+    const { role, username } = req.params;
 
-async function deleteHostUser(username, data) {
-    if (data.role !== 'Admin') {
-        return 'You do not have the authority to delete Host';
-      }
-    const hostCollection = client.db('assigment').collection('Host');
-    const result = await hostCollection.deleteOne({ username: username });
-    return result;
+    if (role !== 'security' && role !== 'host') {
+      return res.status(400).json({ error: 'Invalid role specified.' });
+    }
+
+    const result = await deleteUserByUsername(role, username, req.authData.role);
+    if (result.deletedCount === 1) {
+      return res.status(200).json({ message: 'User deleted successfully.' });
+    } else {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// Function to Delete User by Role
+async function deleteUserByUsername(role, username, userRole) {
+  if (userRole !== 'Admin') {
+    throw new Error('You do not have the authority to delete users.');
+  }
+
+  const collectionName = role.charAt(0).toUpperCase() + role.slice(1); // Convert role to capitalize the first letter
+  const collection = client.db('assignment').collection(collectionName);
+  const result = await collection.deleteOne({ username: username });
+  return result;
 }
 
 //Function to output
