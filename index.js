@@ -733,21 +733,33 @@ async function register(client, data, mydata) {
   }
 }
 
-// Function to retrieve pass details by a host
+// Function to retrieve pass details
 async function retrievePass(client, data, passIdentifier) {
-    const hostCollection = client.db('assigment').collection('Host');
+  const passesCollection = client.db('assigment').collection('Passes');
+  const securityCollection = client.db('assigment').collection('Security');
 
-    // Search for the pass record using the unique pass identifier
-    const passRecord = await client.db('assigment').collection('Records').findOne({ passIdentifier: passIdentifier });
-  
-    // If pass record not found, return an appropriate message
-    if (!passRecord) {
-      return 'Pass record not found.';
-    }
-  
-    // Return the pass details
-    return passRecord;
+  // Check if the security user has the authority to retrieve pass details
+  if (data.role !== 'Host') {
+    return { error: 'You do not have the authority to retrieve pass details.' };
+  }
+
+  // Find the pass record using the pass identifier
+  const passRecord = await passesCollection.findOne({ passIdentifier: passIdentifier });
+
+  if (!passRecord) {
+    return { error: 'Pass not found or unauthorized to retrieve' };
+  }
+
+  // You can customize the response format based on your needs
+  return {
+    passIdentifier: passRecord.passIdentifier,
+    visitorUsername: passRecord.visitorUsername,
+    phoneNumber: passRecord.phoneNumber,
+    issuedBy: passRecord.issuedBy,
+    issueTime: passRecord.issueTime
+  };
 }
+
 
 //Function to read data
 async function read(client, data) {
