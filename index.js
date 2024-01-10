@@ -518,12 +518,13 @@ app.get('/retrieveHostContact/:passIdentifier', verifyToken, async (req, res) =>
  *         description: Unauthorized access.
  *       '404':
  *         description: User not found.
+ *       '500':
+ *         description: Internal Server Error.
  */
 
 app.delete('/deleteUser/:username', verifyToken, async (req, res) => {
   try {
     const username = req.params.username;
-
     const result = await deleteUserByUsername(username, req.authData.role);
     
     if (result.deletedCount === 1) {
@@ -532,8 +533,8 @@ app.delete('/deleteUser/:username', verifyToken, async (req, res) => {
       return res.status(404).json({ error: 'User not found.' });
     }
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    console.error("Error deleting user:", error.message);
+    res.status(500).json({ error: 'Internal Server Error' }); // Generic error response
   }
 });
 
@@ -831,12 +832,15 @@ async function deleteUserByUsername(username, userRole) {
     throw new Error('You do not have the authority to delete users.');
   }
 
-  // Assuming you have a single collection where you need to delete the user by username.
-  const collection = client.db('assignment').collection('Users'); // Update 'Users' with your actual collection name if different.
-  const result = await collection.deleteOne({ username: username });
-  return result;
+  try {
+    const collection = client.db('assignment').collection('Users'); 
+    const result = await collection.deleteOne({ username: username });
+    return result;
+  } catch (error) {
+    console.error("Database operation failed:", error.message);
+    throw new Error('Database operation failed'); // Throw a more generic error
+  }
 }
-
 //Function to output
 function output(data) {
   if(data == 'Admin') {
