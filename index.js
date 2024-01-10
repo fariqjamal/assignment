@@ -376,12 +376,18 @@ app.post('/loginHost', async (req, res) => {
  * @swagger
  * /issuePass:
  *   post:
- *     summary: Issue a visitor pass
- *     description: Issue a visitor pass by a host with visitor's name, purpose of visit, host username, and host phone number.
+ *     summary: Issue a pass after verifying the token
+ *     description: This endpoint is used to issue a pass after verifying the token of the user.
  *     tags:
- *       - Host
+ *       - Pass
  *     security:
- *       - bearerAuth: []
+ *       - loginHost: []
+ *     parameters:
+ *       - in: header
+ *         name: Authorization
+ *         description: Token for authentication. This should be in the format "Bearer {token}".
+ *         required: true
+ *         type: string
  *     requestBody:
  *       required: true
  *       content:
@@ -389,28 +395,36 @@ app.post('/loginHost', async (req, res) => {
  *           schema:
  *             type: object
  *             properties:
- *               visitorName:
+ *               // Define your request body properties here
+ *               // Example:
+ *               passType:
  *                 type: string
- *               purpose:
- *                 type: string
- *             required:
- *               - visitorName
- *               - purpose
+ *                 description: Type of the pass to be issued.
+ *                 example: 'Monthly'
+ *               // Add other properties as needed
  *     responses:
- *       '200':
- *         description: Successfully issued a visitor pass.
+ *       200:
+ *         description: Pass issued successfully
  *         content:
  *           application/json:
  *             schema:
- *               type:object
- *       '403':
- *         description: Unauthorized. Only hosts can issue passes.
+ *               type: object
+ *               properties:
+ *                 // Define your response properties here
+ *                 // Example:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: 'Pass issued successfully'
+ *       // Add other response codes as needed
  */
-    app.post('/issuePass', verifyToken, async (req, res) => {
-        let data = req.user;
-        let passData = req.body;
-        res.send(await issuePass(client, data, passData));
-    });
+app.post('/issuePass', verifyToken, async (req, res) => {
+  let data = req.user;
+  let passData = req.body;
+  res.send(await issuePass(client, data, passData));
+});
 
 /**
  * @swagger
