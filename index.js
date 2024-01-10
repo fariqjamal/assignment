@@ -468,23 +468,10 @@ app.get('/retrievePass/:passIdentifier', verifyToken, async (req, res) => {
  *         description: Pass not found or unauthorized to retrieve
  */
 
-app.get('/retrieveContactNumber/:passIdentifier', verifySecurityToken, async (req, res) => {
+app.get('/retrieveContactNumber/:passIdentifier', verifyToken, async (req, res) => {
   let data = req.user;
   let passIdentifier = req.params.passIdentifier;
   res.send(await retrieveHostContact(client, data, passIdentifier));
-});
-
-    // Handle the retrieved contact number
-    if (contactNumber) {
-      return res.status(200).json({ contactNumber: contactNumber });
-    } else {
-      return res.status(404).json({ error: 'Pass not found or unauthorized to retrieve host contact number.' });
-    }
-
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: 'Internal Server Error' });
-  }
 });
 
 /**
@@ -806,45 +793,6 @@ async function readRecords(client, data) {
     return records;
 }
 
-// Function to retrieve host contact number using the pass identifier
-async function retrieveHostContact(client, passIdentifier) {
-  const passesCollection = client.db('assigment').collection('Passes');
-
-  // Find the pass record using the pass identifier
-  const passRecord = await passesCollection.findOne({ passIdentifier: passIdentifier });
-
-  if (passRecord) {
-    // Retrieve the host contact number from the pass record or any related data structure
-    // For simplicity, assuming a direct reference or embedded contact number in the pass record
-    return passRecord.hostContactNumber || 'Contact number not available';
-  }
-
-  // Return null if the pass record is not found
-  return null;
-}
-
-async function deleteUser(client, username) {
-  const securityCollection = client.db("assigment").collection("Security");
-  const hostCollection = client.db("assigment").collection("Host");
-
-  // Check if the user exists in Security collection
-  let user = await securityCollection.findOne({ username: username });
-  if (user) {
-    await securityCollection.deleteOne({ username: username });
-    return 'Security user deleted successfully.';
-  }
-
-  // Check if the user exists in Host collection
-  user = await hostCollection.findOne({ username: username });
-  if (user) {
-    await hostCollection.deleteOne({ username: username });
-    return 'Host user deleted successfully.';
-  }
-
-  // If the user doesn't exist in Security or Host collection
-  return 'User not found.';
-}
-
 // Function to retrieve host name and contact from visitor pass
 async function retrieveHostContact(client, data, passIdentifier) {
   // Check if the user's role is 'Security'
@@ -874,6 +822,28 @@ async function retrieveHostContact(client, data, passIdentifier) {
       hostName: hostInfo.name,
       hostContact: hostInfo.phoneNumber
   };
+}
+
+async function deleteUser(client, username) {
+  const securityCollection = client.db("assigment").collection("Security");
+  const hostCollection = client.db("assigment").collection("Host");
+
+  // Check if the user exists in Security collection
+  let user = await securityCollection.findOne({ username: username });
+  if (user) {
+    await securityCollection.deleteOne({ username: username });
+    return 'Security user deleted successfully.';
+  }
+
+  // Check if the user exists in Host collection
+  user = await hostCollection.findOne({ username: username });
+  if (user) {
+    await hostCollection.deleteOne({ username: username });
+    return 'Host user deleted successfully.';
+  }
+
+  // If the user doesn't exist in Security or Host collection
+  return 'User not found.';
 }
 
 //Function to output
