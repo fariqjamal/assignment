@@ -476,6 +476,132 @@ app.get('/retrieveContactNumber/:passIdentifier', verifyToken, async (req, res) 
 
 /**
  * @swagger
+ * /registerHostPublic:
+ *   post:
+ *     summary: Register a new host publicly
+ *     description: Register a new host with username, password, name, email, and phoneNumber without requiring a security token for approval
+ *     tags:
+ *       - Host
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               username:
+ *                 type: string
+ *                 description: The username of the host
+ *               password:
+ *                 type: string
+ *                 description: The password of the host
+ *               name:
+ *                 type: string
+ *                 description: The name of the host
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: The email of the host
+ *               phoneNumber:
+ *                 type: string
+ *                 description: The phone number of the host
+ *             required:
+ *               - username
+ *               - password
+ *               - name
+ *               - email
+ *               - phoneNumber
+ *     responses:
+ *       '200':
+ *         description: Host registered successfully
+ *       '400':
+ *         description: Username already in use, please enter another username
+ */
+
+app.post('/registerHostPublic', async (req, res) => {
+  let mydata = req.body;
+  // Here, you can include the logic to register the host in the database
+  // For example, you might call a function like registerHost(client, mydata)
+  // Assuming the function is defined elsewhere in your code
+  // res.send(await registerHost(client, mydata));
+
+  // For demonstration purposes, returning a simple response
+  res.send('Host registered successfully');
+});
+
+/**
+ * @swagger
+ * /registerHostPublic:
+ *   post:
+ *     summary: Register a new host publicly
+ *     description: Register a new host with username, password, name, email, and phoneNumber without requiring any token for approval.
+ *     tags:
+ *       - Host
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               username:
+ *                 type: string
+ *                 description: The username of the host
+ *               password:
+ *                 type: string
+ *                 description: The password of the host
+ *               name:
+ *                 type: string
+ *                 description: The name of the host
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: The email of the host
+ *               phoneNumber:
+ *                 type: string
+ *                 description: The phone number of the host
+ *             required:
+ *               - username
+ *               - password
+ *               - name
+ *               - email
+ *               - phoneNumber
+ *     responses:
+ *       '200':
+ *         description: Host registered successfully
+ *       '400':
+ *         description: Username already in use, please enter another username
+ */
+
+app.post('/registerHostPublic', async (req, res) => {
+  try {
+      const hostData = req.body;
+
+      // Check if the username already exists in the database
+      const existingHost = await client.db("assigment").collection("Host").findOne({ username: hostData.username });
+      if (existingHost) {
+          return res.status(400).json({ error: 'Username already in use, please enter another username' });
+      }
+
+      // Encrypt the host's password before storing it
+      hostData.password = await encryptPassword(hostData.password);
+
+      // Store the host details in the MongoDB database
+      const result = await client.db("assigment").collection("Host").insertOne(hostData);
+      
+      if (result.insertedCount === 1) {
+          res.status(200).json({ message: 'Host registered successfully' });
+      } else {
+          res.status(500).json({ error: 'Failed to register host. Please try again.' });
+      }
+  } catch (error) {
+      console.error('Error registering host:', error);
+      res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+/**
+ * @swagger
  * /deleteUser/{username}:
  *   delete:
  *     summary: Delete a user (Security or Host) by username
@@ -855,6 +981,12 @@ function output(data) {
   } else if (data == 'Visitor') {
     return "You are logged in as Visitor\n1)check in\n2)check out\n3)read visitor data\n4)update profile\n5)delete account"
   }
+}
+
+// Function to encrypt password (similar to your existing encryptPassword function)
+async function encryptPassword(password) {
+  const hash = await bcrypt.hash(password, saltRounds);
+  return hash;
 }
 
 //to verify JWT Token
