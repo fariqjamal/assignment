@@ -442,52 +442,53 @@ app.get('/retrievePass/:passIdentifier', verifyToken, async (req, res) => {
 
 /**
  * @swagger
- * /retrieveHostContact/{passIdentifier}:
+ * /retrieveContact/{passIdentifier}:
  *   get:
- *     summary: Retrieve Host Contact based on Pass Identifier
- *     description: Retrieve the contact number of the host based on a given pass identifier.
+ *     summary: Retrieve host contact number
+ *     description: Retrieve the contact number of the host using a valid visitor pass identifier.
  *     tags:
  *       - Security
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: passIdentifier
  *         required: true
+ *         description: The unique pass identifier to retrieve host contact number.
  *         schema:
  *           type: string
- *         description: Unique identifier of the pass.
- *     security:
- *       - bearerAuth: []  # This indicates that the endpoint requires a bearer token for authentication
  *     responses:
  *       '200':
- *         description: Successful retrieval of host contact number.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 hostContact:
- *                   type: string
- *                   description: Contact number of the host.
+ *         description: Host contact number retrieved successfully
+ *       '401':
+ *         description: Unauthorized - Token is missing or invalid
  *       '404':
- *         description: Pass record not found.
- *       '500':
- *         description: Internal Server Error.
- *       '403':
- *         description: Forbidden - The user doesn't have the authority to retrieve host contact.
+ *         description: Pass not found or unauthorized to retrieve host contact number
  */
-app.get('/retrieveHostContact/:passIdentifier', verifyToken, async (req, res) => {
+
+app.get('/retrieveContact/:passIdentifier', verifyToken, async (req, res) => {
   try {
-      const passIdentifier = req.params.passIdentifier;
-      const hostContact = await handleRetrieveHostContact(client, passIdentifier, req.user);
+    let data = req.user;
+    let passIdentifier = req.params.passIdentifier;
 
-      if (!hostContact) {
-          return res.status(404).json({ error: 'Pass record not found.' });
-      }
+    // Check if the security user has the authority to retrieve host contact number
+    if (data.role !== 'Security') {
+      return res.status(403).json({ error: 'Forbidden - Only security users can perform this action.' });
+    }
 
-      res.status(200).json({ hostContact });
+    // Retrieve host contact number using the pass identifier from the database
+    const contactNumber = await retrieveHostContact(client, passIdentifier);
+
+    // Handle the retrieved contact number
+    if (contactNumber) {
+      return res.status(200).json({ contactNumber: contactNumber });
+    } else {
+      return res.status(404).json({ error: 'Pass not found or unauthorized to retrieve host contact number.' });
+    }
+
   } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: 'Internal Server Error' });
+    console.error(error);
+    return res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
@@ -810,26 +811,21 @@ async function readRecords(client, data) {
     return records;
 }
 
-async function handleRetrieveHostContact(client, passIdentifier, user) {
-  try {
-      if (user.role !== 'Security') {
-          throw new Error('Forbidden - The user doesn\'t have the authority to retrieve host contact.');
-      }
+// Function to retrieve host contact number using the pass identifier
+async function retrieveHostContact(client, passIdentifier) {
+  const passesCollection = client.db('assigment').collection('Passes');
 
-      // Query the database using the passIdentifier to retrieve host contact information.
-      const passRecord = await client.db('assigment').collection('Passes').findOne({ passIdentifier: passIdentifier });
+  // Find the pass record using the pass identifier
+  const passRecord = await passesCollection.findOne({ passIdentifier: passIdentifier });
 
-      if (!passRecord) {
-          throw new Error('Pass record not found.');
-      }
-
-      // Return the host contact information
-      return passRecord.hostPhoneNumber;
-
-  } catch (error) {
-      console.error('Error in handleRetrieveHostContact:', error);
-      throw error;
+  if (passRecord) {
+    // Retrieve the host contact number from the pass record or any related data structure
+    // For simplicity, assuming a direct reference or embedded contact number in the pass record
+    return passRecord.hostContactNumber || 'Contact number not available';
   }
+
+  // Return null if the pass record is not found
+  return null;
 }
 
 async function deleteUser(client, username) {
