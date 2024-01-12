@@ -820,7 +820,7 @@ async function read(client, data) {
     const Admins = await client.db('assigment').collection('Admin').find({ role: 'Admin' }).next();
     const Security = await client.db('assigment').collection('Security').find({ role: 'Security' }).toArray();
     const Hosts = await client.db('assigment').collection('Host').find({ role: 'Host' }).toArray();
-    const Records = await client.db('assigment').collection('Records').find().toArray();
+    const Records = await client.db('assigment').collection('Passes').find().toArray();
 
     return { Admins, Security, Hosts, Records };
   }
@@ -832,7 +832,7 @@ async function read(client, data) {
     }
 
     const Hosts = await client.db('assigment').collection('Host').find({ Security: data.username }).toArray();
-    const Records = await client.db('assigment').collection('Records').find().toArray();
+    const Records = await client.db('assigment').collection('Passes').find().toArray();
 
     return { Security, Hosts, Records };
   }
@@ -843,7 +843,7 @@ async function read(client, data) {
       return 'User not found';
     }
 
-    const Records = await client.db('assigment').collection('Records').toArray();
+    const Records = await client.db('assigment').collection('Passes').toArray();
 
     return { Hosts, Records };
   }
