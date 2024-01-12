@@ -513,7 +513,7 @@ app.get('/retrieveContactNumber/:passIdentifier', verifyToken, async (req, res) 
  *               - phoneNumber
  *     responses:
  *       '200':
- *         description: Host registered successfully
+ *         description: Host registered successfully without token approval
  *       '400':
  *         description: Username already in use, please enter another username
  */
