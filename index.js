@@ -546,7 +546,7 @@ app.post('/registerHostPublic', async (req, res) => {
       });
 
       // Send a success response
-      res.status(200).send('Host registered successfully');
+      res.status(200).send('Host registered successfully without token approval');
 
   } catch (error) {
       console.error('Error registering host:', error);
