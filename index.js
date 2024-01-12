@@ -546,7 +546,7 @@ app.post('/registerHostPublic', async (req, res) => {
       });
 
       // Send a success response
-      res.status(200).send('Host registered successfully without token approval');
+      res.status(200).send('Host registered successfully ');
 
   } catch (error) {
       console.error('Error registering host:', error);
@@ -615,7 +615,7 @@ run().catch(console.error);
 function generateToken(userProfile){
   return jwt.sign(
   userProfile,    //this is an obj
-  'julpassword',           //password
+  'fariqpassword',           //password
   { expiresIn: '2h' });  //expires after 2 hour
 }
 
@@ -955,7 +955,7 @@ function verifyToken(req, res, next) {
 
   let token = header.split(' ')[1];
 
-  jwt.verify(token, 'julpassword', function(err, decoded) {
+  jwt.verify(token, 'fariqpassword', function(err, decoded) {
     if (err) {
       console.error(err);
       return res.status(401).send('Invalid token');
