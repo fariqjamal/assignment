@@ -820,9 +820,9 @@ async function read(client, data) {
     const Admins = await client.db('assigment').collection('Admin').find({ role: 'Admin' }).next();
     const Security = await client.db('assigment').collection('Security').find({ role: 'Security' }).toArray();
     const Hosts = await client.db('assigment').collection('Host').find({ role: 'Host' }).toArray();
-    const Records = await client.db('assigment').collection('Passes').find().toArray();
+    const Passes = await client.db('assigment').collection('Passes').find().toArray();
 
-    return { Admins, Security, Hosts, Records };
+    return { Admins, Security, Hosts, Passes };
   }
 
   if (data.role == 'Security') {
@@ -832,9 +832,9 @@ async function read(client, data) {
     }
 
     const Hosts = await client.db('assigment').collection('Host').find({ Security: data.username }).toArray();
-    const Records = await client.db('assigment').collection('Passes').find().toArray();
+    const Passes = await client.db('assigment').collection('Passes').find().toArray();
 
-    return { Security, Hosts, Records };
+    return { Security, Hosts, Passes };
   }
 
   if (data.role == 'Host') {
@@ -843,9 +843,9 @@ async function read(client, data) {
       return 'User not found';
     }
 
-    const Records = await client.db('assigment').collection('Passes').toArray();
+    const Passes = await client.db('assigment').collection('Passes').toArray();
 
-    return { Hosts, Records };
+    return { Hosts, Passes };
   }
 }
 
@@ -869,10 +869,10 @@ async function readRecords(client, data) {
     }
   
     // Fetch all records from the database
-    const records = await client.db('assigment').collection('Records').find({}).toArray();
+    const passes = await client.db('assigment').collection('Passes').find({}).toArray();
   
     // Return the records
-    return records;
+    return passes;
 }
 
 // Function to retrieve host name and contact from visitor pass
